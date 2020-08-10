@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Galdoba/TR_Dynasty/cli/features"
+	"github.com/Galdoba/devtools/cli/features"
 )
 
 //fmt.Println("terminal.GetSize(int(os.Stdout.Fd()))")
