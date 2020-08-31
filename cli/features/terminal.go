@@ -6,8 +6,10 @@ import (
 )
 
 func TypingSlowly(msg string, msDelay time.Duration) {
-	for i := range msg {
-		fmt.Print(string(msg[i]))
-		time.Sleep(time.Millisecond * msDelay)
+	for _, val := range msg {
+		//r := rune(msg[i])
+		fmt.Print(string(val))
+		//time.Sleep(time.Millisecond * msDelay)
+		time.Sleep(msDelay)
 	}
 }
