@@ -85,9 +85,10 @@ func InputSliceInt() ([]int, error) {
 	return sli, nil
 }
 
+//Confirm - ask 'yes' or 'no' input
 func Confirm(q string) (bool, error) {
 	fmt.Print(q)
-	answer, err := user.InputStr()
+	answer, err := InputStr()
 	answer = strings.ToUpper(answer)
 	if err != nil {
 		return false, err
