@@ -3,6 +3,7 @@ package user
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"os"
 	"runtime"
 	"strconv"
@@ -82,4 +83,22 @@ func InputSliceInt() ([]int, error) {
 		sli = append(sli, sla)
 	}
 	return sli, nil
+}
+
+//Confirm - ask 'yes' or 'no' input
+func Confirm(q string) (bool, error) {
+	fmt.Print(q)
+	answer, err := InputStr()
+	answer = strings.ToUpper(answer)
+	if err != nil {
+		return false, err
+	}
+	switch answer {
+	default:
+		return false, errors.New("Answer not clear")
+	case "N", "NO", "0", "Т":
+		return false, nil
+	case "Y", "YES", "1", "Н":
+		return true, nil
+	}
 }
