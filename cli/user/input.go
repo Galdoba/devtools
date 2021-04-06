@@ -114,7 +114,7 @@ func ChooseOne(q string, answers []string) (int, error) {
 		return 0, nil
 	}
 	for i, an := range answers {
-		fmt.Print("[", i, "] - ", an, "\r")
+		fmt.Print("[", i, "] - ", an, "\n")
 	}
 	answer, err := InputInt()
 	if err != nil {
