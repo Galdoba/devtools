@@ -67,7 +67,7 @@ func InputSliceStr(sp string) ([]string, error) {
 	return sl, nil
 }
 
-//InputSliceInt - same as InputStr, but convert input to slice of Int's
+//InputSliceInt - same as InputSliceStr, but convert input to slice of Int's
 //with space (' ') as separotor
 func InputSliceInt() ([]int, error) {
 	sl, err := InputSliceStr(" ")
@@ -95,10 +95,33 @@ func Confirm(q string) (bool, error) {
 	}
 	switch answer {
 	default:
-		return false, errors.New("Answer not clear")
+		return false, errors.New("answer not clear")
 	case "N", "NO", "0", "Т":
 		return false, nil
 	case "Y", "YES", "1", "Н":
 		return true, nil
 	}
+}
+
+//ChooseOne -  Awaits User-feeded input int
+//выводит вопрос и ждет ответа от пользователя
+func ChooseOne(q string, answers []string) (int, error) {
+	if len(answers) == 0 {
+		return -1, errors.New("no answers provided")
+	}
+	fmt.Print(q + "\n")
+	if len(answers) == 1 {
+		return 0, nil
+	}
+	for i, an := range answers {
+		fmt.Print("[", i, "] - ", an, "\r")
+	}
+	answer, err := InputInt()
+	if err != nil {
+		return -1, err
+	}
+	if answer < 0 || answer >= len(answers) {
+		return -1, errors.New("answer [" + strconv.Itoa(answer) + "] is outside of options array (0-" + strconv.Itoa(len(answers)) + ")")
+	}
+	return answer, nil
 }
