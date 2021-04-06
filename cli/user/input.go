@@ -114,14 +114,14 @@ func ChooseOne(q string, answers []string) (int, error) {
 		return 0, nil
 	}
 	for i, an := range answers {
-		fmt.Print("[", i, "] - ", an, "\n")
+		fmt.Print("  [", i, "] - ", an, "\n")
 	}
 	answer, err := InputInt()
 	if err != nil {
 		return -1, err
 	}
 	if answer < 0 || answer >= len(answers) {
-		return -1, errors.New("answer [" + strconv.Itoa(answer) + "] is outside of options array (0-" + strconv.Itoa(len(answers)) + ")")
+		return -1, errors.New("answer [" + strconv.Itoa(answer) + "] is outside of options array (0-" + strconv.Itoa(len(answers)-1) + ")")
 	}
 	return answer, nil
 }
