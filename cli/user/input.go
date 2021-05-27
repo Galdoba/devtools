@@ -125,3 +125,27 @@ func ChooseOne(q string, answers []string) (int, error) {
 	}
 	return answer, nil
 }
+
+//ChooseOne -  Awaits User-feeded input int
+//выводит вопрос и ждет ответа от пользователя
+//возвращает выбраный стринг
+func ChooseOneStr(q string, answers []string) (string, error) {
+	if len(answers) == 0 {
+		return "no answers provided", errors.New("no answers provided")
+	}
+	fmt.Print(q + "\n")
+	if len(answers) == 1 {
+		return answers[0], nil
+	}
+	for i, an := range answers {
+		fmt.Print("  [", i, "] - ", an, "\n")
+	}
+	answer, err := InputInt()
+	if err != nil {
+		return err.Error(), err
+	}
+	if answer < 0 || answer >= len(answers) {
+		return "answer [" + strconv.Itoa(answer) + "] is outside of options array (0-" + strconv.Itoa(len(answers)-1) + ")", errors.New("answer [" + strconv.Itoa(answer) + "] is outside of options array (0-" + strconv.Itoa(len(answers)-1) + ")")
+	}
+	return answers[answer], nil
+}
