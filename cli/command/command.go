@@ -133,3 +133,56 @@ func (tc *terminalCommand) StdOut() string {
 func (tc *terminalCommand) StdErr() string {
 	return tc.stErr
 }
+
+//Run_untested - тоже. Тест с трекингом состония вывода по этапно
+//вердикт - возможно. нужен вывод последнего сообщения через o.String()/e.String()
+func (tc *terminalCommand) Run_untested() error {
+	var o bytes.Buffer
+	var e bytes.Buffer
+	time.Sleep(time.Millisecond * 2)
+	cmd := exec.Command(tc.programPath, tc.args...)
+	//Control output for Console
+	if tc.term {
+		tc.writersOUT = append(tc.writersOUT, os.Stdout)
+		tc.writersERR = append(tc.writersERR, os.Stderr)
+	}
+	//Control output for Buffer
+	if tc.buffer {
+		tc.writersOUT = append(tc.writersOUT, &o)
+		tc.writersERR = append(tc.writersERR, &e)
+	}
+	//Control output for Files
+	for _, fl := range tc.filePaths {
+		f, err := os.OpenFile(fl, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			panic(err)
+		}
+		tc.writersOUT = append(tc.writersOUT, f)
+		tc.writersERR = append(tc.writersERR, f)
+	}
+	//Setup writer(s)
+	cmd.Stdout = io.MultiWriter(tc.writersOUT...)
+	cmd.Stderr = io.MultiWriter(tc.writersERR...)
+	done := false
+	err := fmt.Errorf("command not finished")
+	i := 0
+	go func() {
+		fmt.Println("start Cycle", i)
+		err = cmd.Run()
+		done = true
+		fmt.Println("end Cycle", i)
+	}()
+
+	for !done {
+		fmt.Printf("cycle %v out ---'%v'---\n", i, o.String())
+		fmt.Printf("cycle %v err ---'%v'---\n", i, e.String())
+		fmt.Printf("cycle %v cmd.err ---'%v'---\n", i, err)
+		time.Sleep(time.Second * 3)
+		i++
+	}
+
+	tc.stOut = o.String()
+	tc.stErr = e.String()
+	fmt.Printf("last message: ---%v---", tc.stOut)
+	return err
+}
