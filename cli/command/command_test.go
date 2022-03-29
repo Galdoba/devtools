@@ -2,14 +2,15 @@ package command
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
 func Test_Command(t *testing.T) {
 	tcmd, err := New(
-		CommandLineArguments("ffmpeg -i d:\\MUX\\tests\\s05e01_Rostelecom_FLASH_YR05_18_19_NORA_16x9_STEREO_5_1_2_0_LTRT_EPISODE_E2291774_RUSSIAN_ENGLISH_10750107.mpg"),
-		Set(BUFFER_ON),
-		WriteToFile("d:\\MUX\\tests\\log2.txt"),
+		CommandLineArguments("ffprobe -v verbose -f lavfi -i amovie=d:\\\\IN\\\\IN_2022-03-28\\\\geroi_zakalennye_severnoy_shirotoy_2015__hd_rus20.m4a,asetnsamples=48000,astats=metadata=1:reset=1 -show_entries frame=pkt_pts_time:frame_tags=lavfi.astats.Overall.RMS_level,lavfi.astats.1.RMS_level,lavfi.astats.2.RMS_level,lavfi.astats.3.RMS_level,lavfi.astats.4.RMS_level,lavfi.astats.5.RMS_level,lavfi.astats.6.RMS_level -of csv=p=0"),
+		Set(TERMINAL_ON),
+		WriteToFile("d:\\IN\\IN_testInput\\log3.txt"),
 	)
 	if err != nil {
 		t.Errorf("func New() error: %v", err.Error())
@@ -24,28 +25,10 @@ func Test_Command(t *testing.T) {
 	fmt.Println("///")
 	fmt.Println("ERR")
 	fmt.Println(tcmd.stErr)
+	ex, err := os.Executable()
+	fmt.Println("launch position:", ex, err)
 
-}
-
-func Test_Command_untested(t *testing.T) {
-	path := "d:\\IN\\IN_2022-02-07\\Eiffel_AUDIORUS51.m4a"
-	tcmd, err := New(
-		CommandLineArguments(fmt.Sprintf("loudnorm %v -scan", path)),
-		Set(BUFFER_ON),
-		WriteToFile("d:\\IN\\IN_2022-02-07\\Eiffel_AUDIORUS51.txt"),
-	)
-	if err != nil {
-		t.Errorf("func New() error: %v", err.Error())
-	}
-	if err := tcmd.Run_untested(); err != nil {
-		t.Errorf("func Run() error: %v", err.Error())
-	}
-
-	fmt.Println("///")
-	fmt.Println("OUT")
-	fmt.Println(tcmd.StdOut())
-	fmt.Println("///")
-	fmt.Println("ERR")
-	fmt.Println(tcmd.StdErr())
+	hn, err := os.Hostname()
+	fmt.Println("Host Name:", hn, err)
 
 }
