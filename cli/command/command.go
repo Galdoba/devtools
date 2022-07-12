@@ -39,25 +39,8 @@ type commandInstruction struct {
 //New - создает и наполняет конструкт запускающийся в стандартном терминале
 func New(inst ...commandInstruction) (*terminalCommand, error) {
 	tc := terminalCommand{}
-	for _, val := range inst {
-		switch val.instType {
-		default:
-			continue
-		case STD_INPUT:
-			args := strings.Split(val.arg, " ")
-			tc.programPath = args[0]
-			tc.args = args[1:]
-		case TERMINAL_ON:
-			tc.term = true
-		case TERMINAL_OFF:
-			tc.term = false
-		case BUFFER_ON:
-			tc.buffer = true
-		case BUFFER_OFF:
-			tc.buffer = false
-		case FILE:
-			tc.filePaths = append(tc.filePaths, val.arg)
-		}
+	for _, in := range inst {
+		tc.AddInstruction(in)
 	}
 	if tc.programPath == "" {
 		return nil, fmt.Errorf("command line undefined")
@@ -128,6 +111,30 @@ func Set(i int) commandInstruction {
 //WriteToFile - добавляется файл в который будет писаться output и error
 func WriteToFile(path string) commandInstruction {
 	return commandInstruction{FILE, path}
+}
+
+//AddInstruction - добавляет в инструкции информацию о том что и как делать
+//там где инструкции противоречат друг другу приоритетной будет послеледняя
+func (tc *terminalCommand) AddInstruction(ti commandInstruction) {
+	switch ti.instType {
+	default:
+	case STD_INPUT:
+		args := strings.Split(ti.arg, " ")
+		tc.programPath = args[0]
+		tc.args = args[1:]
+	case TERMINAL_ON:
+		tc.term = true
+	case TERMINAL_OFF:
+		tc.term = false
+	case BUFFER_ON:
+		tc.buffer = true
+	case BUFFER_OFF:
+		tc.buffer = false
+	case FILE:
+		if ti.arg != "" {
+			tc.filePaths = append(tc.filePaths, ti.arg)
+		}
+	}
 }
 
 //StdOut - возвращает стандартный вывод
