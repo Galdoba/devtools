@@ -3,6 +3,8 @@ package features
 import (
 	"fmt"
 	"time"
+
+	"github.com/nsf/termbox-go"
 )
 
 func TypingSlowly(msg string, msDelay time.Duration) {
@@ -10,6 +12,10 @@ func TypingSlowly(msg string, msDelay time.Duration) {
 		//r := rune(msg[i])
 		fmt.Print(string(val))
 		//time.Sleep(time.Millisecond * msDelay)
-		time.Sleep(msDelay)
+		time.Sleep(msDelay / 1000)
 	}
+}
+
+func Size() (int, int) {
+	return termbox.Size()
 }
