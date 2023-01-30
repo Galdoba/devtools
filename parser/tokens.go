@@ -1,6 +1,9 @@
 package parser
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 func Ident() ParserFunc {
 	//return JOIN(LIT(Alpha), WHILE(OR(LIT(Alpha), LIT(Digit))))
@@ -56,23 +59,40 @@ const (
 	signs          = "+-*/="
 )
 
-/*
-Usage					Notation
-----------------		---------
-definition				=
-concatenation			,
-termination				;
-alternation				|
-optional				[ ... ]
-repetition				{ ... }
-grouping				( ... )
-terminal string			" ... "
-terminal string			' ... '
-comment					(* ... *)
-special sequence		? ... ?
-exception				-
+func ConfirmEBNF(LHS string) bool {
+	if !strings.HasSuffix(LHS, ";") {
+		return false
+	}
 
-*/
+	return true
+}
+
+// func NewParserFunc(RHS string) string {
+// 	LHS := ""
+
+// 	for !terminated(LHS) {
+// 		if RHS == "" {
+// 			LHS += ";"
+// 			continue
+// 		}
+// 		switch haveClosings(RHS) {
+
+// 		case 1:
+// 			//pre, suf := "", ""
+// 			RHS, _, _ = trimClosings(RHS, "[", "]")
+// 			LHS += "OPT("
+// 			continue
+// 		}
+// 	}
+// 	return LHS
+// }
+
+func printEBNR(ebnr string) {
+	//abc,def
+	str := ""
+	//str = NewParserFunc(ebnr)
+	fmt.Println(str)
+}
 
 func lowerLetter(chr byte) bool {
 	low_letter := lowerLetterEng + lowerLetterRus

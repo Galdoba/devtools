@@ -62,6 +62,7 @@ func OPT(arg interface{}) ParserFunc {
 	}
 }
 
+//WHILE - repetition	{ ... }
 func WHILE(arg interface{}) ParserFunc {
 	return func(rd *Reader) (*Result, *Error) {
 		res := (*Result)(nil)
@@ -86,7 +87,7 @@ func NOT(arg interface{}) ParserFunc {
 		default:
 			err = nil
 		case nil:
-			err = NewError().Add(pos, "NOT3 is not true")
+			err = NewError().Add(pos, "NOT is not true")
 		}
 
 		return nil, err
