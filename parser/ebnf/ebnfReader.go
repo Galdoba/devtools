@@ -16,31 +16,52 @@ aaaaaaaaa
 */
 
 func OmitComments(data string) string {
-	bod, pre, suf := "", "", ""
-
-	i := 0
-	for {
-		fmt.Println("!!", i, pre, bod, suf, data)
-		bod, pre, suf = trimClosingsLazy(data, "(*", "*)")
-		i++
-		if i > 6 {
-			fmt.Println("!!!!", pre, bod, suf, data)
+	dataNew := debracketGreedy(data, "(*", "*)")
+	try := 0
+	for dataNew != data {
+		try++
+		if try > 3 {
 			return data
 		}
-		if bod == data {
-			fmt.Println("NOT FOUND")
-			return data
-		}
-		if pre+suf == "" {
-			data = bod
-			return data
-		} else {
-			rest := strings.Split(data, "(*"+bod+"*)")
-			data = strings.Join(rest, "")
-
-		}
+		data = dataNew
+		dataNew = debracketGreedy(data, "(*", "*)")
 	}
 	return data
+}
+
+func debracketGreedy(str, open, close string) string {
+	//111(*222*)333
+	feed := strings.Split(str, "")
+	opened := false
+	closed := false
+	result := ""
+	buf := ""
+	for _, f := range feed {
+		//fmt.Println(result)
+		result += f
+		if closed {
+			continue
+		}
+		buf += f
+		if !opened && strings.HasSuffix(result, open) {
+			opened = true
+			//	fmt.Println("open")
+			buf = open + ".."
+			result += ".."
+			continue
+		}
+		if opened && !closed && strings.HasSuffix(result, close) {
+			//	fmt.Println("close")
+			closed = true
+		}
+	}
+	result = strings.Join(strings.Split(result, buf), "")
+	//fmt.Println("END:", result)
+	if !closed {
+		//	fmt.Println("STR")
+		return str
+	}
+	return result
 }
 
 /*
