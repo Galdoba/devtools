@@ -17,16 +17,24 @@ aaaaaaaaa
 
 func OmitComments(data string) string {
 	dataNew := debracketGreedy(data, "(*", "*)")
-	try := 0
 	for dataNew != data {
-		try++
-		if try > 3 {
-			return data
-		}
 		data = dataNew
 		dataNew = debracketGreedy(data, "(*", "*)")
 	}
 	return data
+}
+
+func MapTerminalStrings(data string) map[int]string {
+	tsm := make(map[int]string)
+	currentTS := -1
+	feed := strings.Split(data, "")
+	for i, f := range feed {
+		if 
+		tail := strings.Join(feed[i:])
+	}
+	bod, pre, suf := trimClosingsGreedy(data, `"`, `"`)
+
+	return tsm
 }
 
 func debracketGreedy(str, open, close string) string {
@@ -64,6 +72,29 @@ func debracketGreedy(str, open, close string) string {
 	return result
 }
 
+func TerminalString(data string) string {
+	str, _, _ := trimClosingsGreedy(data, "'", "'")
+	if str != data {
+		return str
+	}
+	str, _, _ = trimClosingsGreedy(data, `"`, `"`)
+	if str != data {
+		return str
+	}
+	return ""
+}
+
+func haveTerminalString(data string) bool {
+	quotes := []string{"'", `"`}
+	for _, q := range quotes {
+		parts := strings.Split(data, q)
+		if len(parts) > 2 {
+			return true
+		}
+	}
+	return false
+}
+
 /*
 Usage					Notation	name	priority
 ----------------		---------	------	----
@@ -79,22 +110,137 @@ terminal string			' ... '
 comment					(* ... *)
 special sequence		? ... ?
 exception				-			NOT		0
+/////////////////////////////
+любая строка для обработки должна начинаться с одного из Notation
+если оно не найдено - ошибка некоректный синтаксис или глиф не определен
 */
-//(token, lhs, rhs, tail string, error)
-func nextToken(data string) (string, string, string, string, error) {
-	feed := strings.Split(data, "")
-	for _, f := range feed {
-		switch f {
-		case "'": //termStr
-			bod, pre, suf := trimClosingsGreedy(data, "'", "'")
-			return "TS1", pre, bod, suf, nil
-		case `"`:
-			bod, pre, suf := trimClosingsGreedy(data, `"`, `"`)
-			return "TS2", pre, bod, suf, nil
-		}
+func nextToken(data string) (token string, RHS string, rest string, err error) {
+	//token, RHS, rest := string, string, string
+	data = OmitComments(data)
+	switch {
+	default:
+		token = "UNRECONIZED"
+		RHS = data
+	case isDefinition(data):
+		token = "LIT"
+		//RHS, rest, err = grabDefinition(data)
+	case isTerminalString1(data):
+		token = "terminal_string_1"
+		RHS, rest, err = grabTS1(data)
+	case isTerminalString2(data):
+		token = "terminal_string_2"
+		RHS, rest, err = grabTS2(data)
 	}
-	return "", "", "", "", fmt.Errorf("can't find token")
+	return
 }
+
+func grabTS1(data string) (RHS string, rest string, err error) {
+	dt := strings.Split(data, "'")
+	if len(dt) < 2 {
+		err = fmt.Errorf("TS1 is not closed: '%v'", data)
+		RHS = data
+	}
+	RHS = dt[1]
+	rest = strings.Join(dt[2:], "'")
+	return
+}
+
+func grabTS2(data string) (RHS string, rest string, err error) {
+	dt := strings.Split(data, `"`)
+	if len(dt) < 2 {
+		err = fmt.Errorf("TS2 is not closed: '%v'", data)
+		RHS = data
+	}
+	RHS = dt[1]
+	rest = strings.Join(dt[2:], `"`)
+	return
+}
+
+//DEFINITIONS:
+func isTerminalString1(data string) bool {
+	return strings.HasPrefix(data, "'")
+}
+func isTerminalString2(data string) bool {
+	return strings.HasPrefix(data, `"`)
+}
+func isDefinition(data string) bool {
+	return strings.HasPrefix(data, "=")
+}
+func isConcatenation(data string) bool {
+	return strings.HasPrefix(data, ",")
+}
+func isTermination(data string) bool {
+	return strings.HasPrefix(data, ";")
+}
+func isAlternation(data string) bool {
+	return strings.HasPrefix(data, "|")
+}
+func isOptional(data string) bool {
+	return strings.HasPrefix(data, "[")
+}
+func isRepetition(data string) bool {
+	return strings.HasPrefix(data, "{")
+}
+func isGrouping(data string) bool {
+	return strings.HasPrefix(data, "(")
+}
+func isComment(data string) bool {
+	return strings.HasPrefix(data, "(*")
+}
+func isSpecialSequance(data string) bool {
+	return strings.HasPrefix(data, "?")
+}
+func isException(data string) bool {
+	return strings.HasPrefix(data, "-")
+}
+
+//(token, lhs, rhs, tail string, error)
+// func nextToken(data string) (string, string, string, string, error) {
+// 	feed := strings.Split(data, "")
+
+// 	for _, f := range feed {
+// 		switch f {
+// 		case "'": //termStr
+// 			bod, pre, suf := trimClosingsGreedy(data, "'", "'")
+// 			return "TS1", pre, bod, suf, nil
+// 		case `"`:
+// 			bod, pre, suf := trimClosingsGreedy(data, `"`, `"`)
+// 			return "TS2", pre, bod, suf, nil
+// 		case "[":
+// 			bod, pre, suf := trimClosingsGreedy(data, "[", "]")
+// 			return "OPT", pre, bod, suf, nil
+// 		case "{":
+// 			bod, pre, suf := trimClosingsGreedy(data, "{", "}")
+// 			return "WHILE", pre, bod, suf, nil
+// 		case "(":
+// 			bod, pre, suf := trimClosingsGreedy(data, "(", ")")
+// 			return "grouping", pre, bod, suf, nil
+// 		case "?":
+// 			bod, pre, suf := trimClosingsGreedy(data, "?", "?")
+// 			return "special_seq", pre, bod, suf, nil
+// 		}
+// 	}
+// 	return "", "", "", "", fmt.Errorf("can't find token")
+// }
+
+/*
+
+[{'abc'}]"de"
+
+*/
+
+type tokenList struct {
+	t []token
+}
+
+type token struct {
+	name string
+	rhs  string
+}
+
+//func parseTokens(data string) tokenList {
+
+//}
 
 func terminated(rbnf string) bool {
 	return strings.HasSuffix(rbnf, ";")
@@ -108,35 +254,6 @@ func haveClosings(rbnf string) int {
 	return 0
 }
 
-/*
-aaaaa[sssss]bbbb
-0aaaaa
-1sssss]bbbb
-0sssss
-1bbbb
-
-aa[bb[sssss]cc]dd split(str, "[") == split(1:)
-aa bb +[+ sssss]cc]dd
-
-bb[sssss]cc]dd
-bb[sssss]cc +]+ dd
-
-bb[sssss]cc
-*/
-
-func collect(input, open, close string) string {
-	bodyTailSl := strings.Split(input, open)
-	bodyTail := strings.Join(bodyTailSl[1:], "")
-	body := strings.Split(bodyTail, close)
-	bd := strings.Join(body[:len(body)-1], "")
-	fmt.Println("col", bd)
-	return bd
-}
-
-/*
-[def] => [def];
-[[def]] => OPT(OPT(def));
-*/
 ////////////////////////////////
 func trimClosingsLazy(str, open, close string) (string, string, string) {
 	if !strings.Contains(str, open) || !strings.Contains(str, close) {
