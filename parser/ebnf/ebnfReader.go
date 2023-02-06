@@ -141,6 +141,40 @@ func haveInvalidSeq(data string) string {
 	return ""
 }
 
+func catchToken2(data string) token {
+	feed := strings.Split(data, "")
+	t := token{}
+	t.ttype = undefined
+	buf := ""
+	state := stateBasic
+	for i, f := range feed {
+		buf += f
+		switch {
+		default:
+		case strings.HasSuffix(buf, ","):
+			switch state {
+			case stateTerminal, stateComment, stateSpecial:
+				continue
+			}
+			t.ttype = concatenation
+			t.LHS = strings.TrimSuffix(buf, ",")
+			t.RHS = restAsString(feed, i)
+			return t
+		case strings.HasSuffix(buf, "="):
+		}
+	}
+	return t
+}
+
+func restAsString(sl []string, i int) string {
+	if len(sl) <= i {
+		return ""
+	}
+	return strings.Join(sl[:i], "")
+}
+
+var tokenOrder = []string{",", "=", "|", "*)", ")", "]", "}", "-", "`", "*", `"`, "?", "(*", "(", "[", "{", ";"}
+
 func catchToken(data string) token {
 	//TODO: перестроить так чтобы он ловил терминальные символы в порядке из стандарта (таблица 1 стр 7)
 	feed := strings.Split(data, "")
@@ -152,22 +186,49 @@ func catchToken(data string) token {
 		switch {
 		default:
 			t.err = fmt.Errorf("token not defined")
-		case strings.HasSuffix(buf, "="):
-			t.ttype = definition
-			t.LHS = formatLHS(buf, "=")
-			t.RHS = strings.Join(feed[i:], "")
 		case strings.HasSuffix(buf, ","):
 			t.ttype = concatenation
 			t.LHS = formatLHS(buf, ",")
 			t.RHS = strings.Join(feed[i:], "")
-		case strings.HasSuffix(buf, ";"):
-			t.ttype = termination
-			t.LHS = formatLHS(buf, ";")
-			t.RHS = ""
+		case strings.HasSuffix(buf, "="):
+			t.ttype = definition
+			t.LHS = formatLHS(buf, "=")
+			t.RHS = strings.Join(feed[i:], "")
 		case strings.HasSuffix(buf, "|"):
 			t.ttype = alternation
 			t.LHS = formatLHS(buf, "|")
 			t.RHS = strings.Join(feed[i:], "")
+		case strings.HasSuffix(buf, "*)"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, ")"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "]"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "}"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "-"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "`"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "*"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, `"`):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "?"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "(*"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "("):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "["):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, "{"):
+			t.err = fmt.Errorf("unimplemented")
+		case strings.HasSuffix(buf, ";"):
+			t.ttype = termination
+			t.LHS = formatLHS(buf, ";")
+			t.RHS = ""
+			/*
 		case strings.HasSuffix(buf, "["):
 			t.ttype = optional
 			t.LHS = formatLHS(buf, "[")
@@ -200,6 +261,7 @@ func catchToken(data string) token {
 			t.LHS, t.tail, t.err = grabGridy(strings.Join(feed[i:], ""), "?")
 			return t
 		}
+		*/
 		t.LHS += f
 	}
 	return t
@@ -263,7 +325,7 @@ func grabTS2(data string) (RHS string, rest string, err error) {
 	return
 }
 
-//DEFINITIONS:
+// DEFINITIONS:
 func isTerminalString1(data string) bool {
 	return strings.HasPrefix(data, "'")
 }
@@ -352,7 +414,7 @@ func haveClosings(rbnf string) int {
 	return 0
 }
 
-////////////////////////////////
+// //////////////////////////////
 func trimClosingsLazy(str, open, close string) (string, string, string) {
 	if !strings.Contains(str, open) || !strings.Contains(str, close) {
 		return str, "", ""
