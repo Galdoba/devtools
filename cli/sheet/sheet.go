@@ -8,15 +8,15 @@ const (
 )
 
 type sheet struct {
-	lists      map[string]*list
+	lists      map[string]List
 	activeList string
 	buffer     string
 	mode       int
 }
 
-func NewSheet(lists ...*list) *sheet {
+func NewSheet(lists ...List) *sheet {
 	sh := sheet{}
-	sh.lists = make(map[string]*list)
+	sh.lists = make(map[string]List)
 	for _, list := range lists {
 		sh.lists[list.Name()] = list
 
@@ -24,6 +24,6 @@ func NewSheet(lists ...*list) *sheet {
 	return &sh
 }
 
-func (sh *sheet) List(name string) *list {
+func (sh *sheet) List(name string) List {
 	return sh.lists[name]
 }

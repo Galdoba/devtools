@@ -64,6 +64,24 @@ func ListFiles(root string) []string {
 	return files
 }
 
+func ListFilesN(root string, n int) []string {
+	files := []string{}
+	cont, err := contains(root)
+	if err != nil {
+		return nil
+	}
+	for i, c := range cont {
+		if i > n {
+			break
+		}
+		if c.isDir {
+			continue
+		}
+		files = append(files, strings.TrimSuffix(c.dirName, "/")+"/"+c.name)
+	}
+	return files
+}
+
 func contains(root string) ([]content, error) {
 	root = strings.ReplaceAll(root, "\\", "/")
 	var cont []content

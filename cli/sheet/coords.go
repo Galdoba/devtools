@@ -39,13 +39,13 @@ func (c *coord) Right() (int, int) {
 }
 
 func (c *coord) Valid(maxRow int, maxCol int) bool {
-	if c.r < 1 {
+	if c.r < 0 {
 		return false
 	}
 	if c.r > maxRow {
 		return false
 	}
-	if c.c < 1 {
+	if c.c < 0 {
 		return false
 	}
 	if c.c > maxCol {
