@@ -7,10 +7,14 @@ import (
 
 func TestKV(t *testing.T) {
 
-	kv2, err := LoadCollection("Foo")
+	kv2, err := LoadCollection("Goo")
 	if err != nil {
 		fmt.Println(err.Error())
-		kv2, _ = NewCollection("Foo")
+		kv2, err = NewCollection("Goo")
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		fmt.Println("Created NEW")
 	}
 	fmt.Println(kv2.Get("foo2"))
 	kv2.Set("FOO", "BAR")
@@ -22,10 +26,10 @@ func TestKV(t *testing.T) {
 		fmt.Println(err.Error())
 	}
 	fmt.Println(kv2.Get("FOO5"))
-	fmt.Println(kv2.Get("FOO7"))
-	// err = DeleteCollection(kv2)
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// }
+	fmt.Println(kv2.Get("Baaard"))
+	err = DeleteCollection(kv2)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 
 }

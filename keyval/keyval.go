@@ -6,7 +6,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 )
 
 const (
@@ -18,6 +17,7 @@ const (
 func path(name string) string {
 	path, _ := os.UserHomeDir()
 	path += defaultDir + name
+	path = strings.ReplaceAll(path, "\\", "/")
 	return path
 }
 
@@ -35,7 +35,9 @@ func NewCollection(name string) (*collection, error) {
 	}
 
 	c.path = dirname + defaultDir
+	c.path = strings.ReplaceAll(c.path, "\\", "/")
 	err = os.MkdirAll(c.path, os.ModePerm)
+
 	if err != nil {
 		return &c, fmt.Errorf("os.MkdirAll(%v): %v", c.path, err.Error())
 	}
@@ -48,17 +50,18 @@ func NewCollection(name string) (*collection, error) {
 		return nil, fmt.Errorf("can't create: %v", err.Error())
 	}
 
-	_, err = os.Create(c.path + c.name)
-	if err != nil {
-		return &c, fmt.Errorf("os.Create(%v): %v", c.path+c.name, err.Error())
+	f, errf := os.Create(c.path + c.name)
+	if errf != nil {
+		return &c, fmt.Errorf("os.Create(%v): %v", c.path+c.name, errf.Error())
 	}
+	defer f.Close()
 	c.kval = make(map[string]string)
 	return &c, nil
 }
 
 //separator = :::
 func LoadCollection(name string) (*collection, error) {
-	pres, err := isPresent(name)
+	pres, err := isPresent(path(name))
 	if !pres {
 		return nil, fmt.Errorf("can't load collection: collection absent")
 	}
@@ -82,23 +85,23 @@ func LoadCollection(name string) (*collection, error) {
 }
 
 func SaveCollection(c Kval) error {
-	err := os.Rename(c.Path(), c.Path()+".tmp")
-	i := 0
-	for err != nil && i < 100 {
-		fmt.Printf("Try save %v/100\r", i)
-		err = os.Rename(c.Path(), c.Path()+".tmp")
-		time.Sleep(time.Millisecond * 10)
-		i++
-	}
-	if err != nil {
-		return fmt.Errorf("backup not created: %v", err.Error())
-	}
-	f, err := os.OpenFile(c.Path(), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	// err := os.Rename(c.Path(), c.Path()+".tmp")
+
+	// bts, err := os.ReadFile(c.Path())
+	// if err != nil {
+	// 	return fmt.Errorf("original not read: %v", err.Error())
+	// }
+	// err = os.WriteFile(c.Path()+".tmp", bts, 0600)
+	// if err != nil {
+	// 	return fmt.Errorf("backup not written: %v", err.Error())
+	// }
+
+	f, err := os.OpenFile(c.Path(), os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
 		return fmt.Errorf("list was not cleared: %v", err.Error())
 	}
 	defer f.Close()
-
+	f.Truncate(0)
 	keys, vals := c.List()
 	for i := range keys {
 		text := keys[i] + ":::" + vals[i] + "\n"
@@ -106,18 +109,17 @@ func SaveCollection(c Kval) error {
 			return fmt.Errorf("can't write %v | %v", text, err.Error())
 		}
 	}
-	err = os.Remove(c.Path() + ".tmp")
-	if err != nil {
-		return fmt.Errorf("os.Remove() backup: %v", err.Error())
-	}
+
 	return nil
 }
 
 func DeleteCollection(c Kval) error {
-
-	err := os.Remove(c.Path())
-	if err != nil {
-		return fmt.Errorf("os.Remove(): %v", err.Error())
+	pres, _ := isPresent(c.Path())
+	if pres {
+		err := os.Remove(c.Path())
+		if err != nil {
+			return fmt.Errorf("os.Remove(): %v", err.Error())
+		}
 	}
 	c = nil
 	return nil
@@ -164,10 +166,7 @@ func (c *collection) Clear(key string) {
 
 ///////////////////////////////helpers
 func isPresent(name string) (bool, error) {
-	dirname, _ := os.UserHomeDir()
-	path := dirname + defaultDir
-
-	if _, err := os.Stat(path + name); err == nil {
+	if _, err := os.Stat(name); err == nil {
 		return true, nil
 	} else if errors.Is(err, os.ErrNotExist) {
 		return false, nil
