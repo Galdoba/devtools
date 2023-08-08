@@ -27,7 +27,7 @@ func TestKV(t *testing.T) {
 	}
 	fmt.Println(kv2.Get("FOO5"))
 	fmt.Println(kv2.Get("Baaard"))
-	err = DeleteCollection(kv2)
+	//err = DeleteCollection(kv2)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

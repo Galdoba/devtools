@@ -1,7 +1,9 @@
 package directory
 
 import (
+	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 )
 
@@ -31,6 +33,24 @@ func Tree(root string) []string {
 		list = append(list, Tree(leaf)...)
 	}
 	return list
+}
+
+func List(dir string) (string, []string, error) {
+	path, err := filepath.Abs(dir)
+	if err != nil {
+		return dir, []string{path, "null", err.Error()}, err
+	}
+	sep := string(filepath.Separator)
+	if !strings.HasSuffix(path, sep) {
+		path += sep
+	}
+	fi, _ := ioutil.ReadDir(dir)
+	files := []string{}
+	for _, f := range fi {
+		fmt.Println(f.Name(), f.IsDir(), f.Mode().Perm().String())
+		files = append(files, f.Name())
+	}
+	return path, files, nil
 }
 
 func ListDirs(root string) []string {

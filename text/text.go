@@ -3,7 +3,7 @@ package text
 import "strings"
 
 func EnsureASCII(s string) string {
-	gl := strings.Split(s, "")
+     	gl := strings.Split(s, "")
 	result := ""
 	for _, g := range gl {
 		switch g {
