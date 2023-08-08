@@ -1,7 +1,6 @@
 package directory
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -47,7 +46,6 @@ func List(dir string) (string, []string, error) {
 	fi, _ := ioutil.ReadDir(dir)
 	files := []string{}
 	for _, f := range fi {
-		fmt.Println(f.Name(), f.IsDir(), f.Mode().Perm().String())
 		files = append(files, f.Name())
 	}
 	return path, files, nil

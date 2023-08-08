@@ -16,9 +16,9 @@ func TestReadDir(t *testing.T) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	fmt.Println("===", root)
+
 	dir, files, err := List(root)
-	fmt.Println(fmt.Println("===", dir))
+
 	if err != nil {
 		fmt.Println(err.Error())
 	}
