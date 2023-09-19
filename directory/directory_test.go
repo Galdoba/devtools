@@ -40,3 +40,12 @@ func TestReadDir(t *testing.T) {
 	}
 	//}
 }
+
+func TestTree(t *testing.T) {
+
+	root := `/home/galdoba/Videos`
+	tree := Tree(root)
+	for i, branch := range tree {
+		fmt.Println(i, branch)
+	}
+}

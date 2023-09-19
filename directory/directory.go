@@ -2,6 +2,7 @@ package directory
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -26,10 +27,15 @@ allFilesPaths := directory.List(root, instruction.New(FOLDER))
 
 */
 
+func separator() string {
+	return string(filepath.Separator)
+}
+
 func Tree(root string) []string {
 	list := []string{root}
 	for _, leaf := range ListDirs(root) {
 		list = append(list, Tree(leaf)...)
+
 	}
 	return list
 }
@@ -43,7 +49,7 @@ func List(dir string) (string, []string, error) {
 	if !strings.HasSuffix(path, sep) {
 		path += sep
 	}
-	fi, _ := ioutil.ReadDir(dir)
+	fi, _ := os.ReadDir(dir)
 	files := []string{}
 	for _, f := range fi {
 		files = append(files, f.Name())
@@ -61,7 +67,7 @@ func ListDirs(root string) []string {
 		if !c.isDir {
 			continue
 		}
-		newDir := strings.TrimSuffix(c.dirName, "/") + "/" + c.name
+		newDir := strings.TrimSuffix(c.dirName, separator()) + separator() + c.name + separator()
 		files = append(files, newDir)
 	}
 	return files
