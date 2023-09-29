@@ -104,7 +104,7 @@ func main() {
 		},
 		{
 			Name:        "print",
-			Usage:       "kval [Context]... print [listname]...",
+			Usage:       "kval print [list1]...",
 			UsageText:   "print list of k-v pairs",
 			Description: "TODO: подробное описание команды",
 			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
@@ -120,7 +120,6 @@ func main() {
 						fullTree = append(fullTree, directory.Tree(keyval.MakePath(arg))...)
 					}
 				}
-
 				for _, leaf := range fullTree {
 					if strings.HasSuffix(leaf, ".kv") {
 						lists = append(lists, leaf)
@@ -227,7 +226,7 @@ func main() {
 		},
 		{
 			Name:        "write",
-			Usage:       "adds k-v pair to database",
+			Usage:       "set/change k-v pair to database",
 			UsageText:   "-location -key key1 -val value1",
 			Description: "TODO: подробное описание команды",
 			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
@@ -293,7 +292,6 @@ func main() {
 					Aliases: []string{
 						"to",
 						"from",
-						"page",
 						"loc",
 					},
 				},

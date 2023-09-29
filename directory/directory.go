@@ -99,7 +99,7 @@ func ListFiles(root string) []string {
 		if c.isDir {
 			continue
 		}
-		files = append(files, strings.TrimSuffix(c.dirName, "/")+"/"+c.name)
+		files = append(files, strings.TrimSuffix(c.dirName, separator())+separator()+c.name)
 	}
 	return files
 }
@@ -117,13 +117,13 @@ func ListFilesN(root string, n int) []string {
 		if c.isDir {
 			continue
 		}
-		files = append(files, strings.TrimSuffix(c.dirName, "/")+"/"+c.name)
+		files = append(files, strings.TrimSuffix(c.dirName, separator())+separator()+c.name)
 	}
 	return files
 }
 
 func contains(root string) ([]content, error) {
-	root = strings.ReplaceAll(root, "\\", "/")
+	root = strings.ReplaceAll(root, "\\", separator())
 	var cont []content
 	fileInfo, err := os.ReadDir(root)
 	if err != nil {
