@@ -1,7 +1,6 @@
 package directory
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,15 +26,32 @@ allFilesPaths := directory.List(root, instruction.New(FOLDER))
 
 */
 
+type tree struct {
+	root     string
+	branches []string
+	leafs    []string
+}
+
+func growTree(root string) *tree {
+	tr := tree{}
+	tr.root = root
+	return &tr
+}
+
 func separator() string {
 	return string(filepath.Separator)
 }
 
 func Tree(root string) []string {
 	list := []string{root}
+	fi, _ := os.ReadDir(root)
+	for _, f := range fi {
+		if !f.IsDir() {
+			list = append(list, root+f.Name())
+		}
+	}
 	for _, leaf := range ListDirs(root) {
 		list = append(list, Tree(leaf)...)
-
 	}
 	return list
 }
@@ -109,7 +125,7 @@ func ListFilesN(root string, n int) []string {
 func contains(root string) ([]content, error) {
 	root = strings.ReplaceAll(root, "\\", "/")
 	var cont []content
-	fileInfo, err := ioutil.ReadDir(root)
+	fileInfo, err := os.ReadDir(root)
 	if err != nil {
 		return cont, err
 	}
