@@ -225,6 +225,73 @@ func main() {
 			},
 		},
 		{
+			Name:        "clean",
+			Usage:       "delete bad keys and empty lists",
+			Description: "TODO: подробное описание команды",
+			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
+			Category:    "Info",
+			Action: func(c *cli.Context) error {
+				fullTree := []string{}
+				args := c.Args()
+				switch args.Len() {
+				case 0:
+					fullTree = directory.Tree(keyval.MakePath(""))
+				default:
+					for _, arg := range args.Slice() {
+						fullTree = append(fullTree, directory.Tree(keyval.MakePath(arg))...)
+					}
+				}
+
+				for _, leaf := range fullTree {
+					if strings.HasSuffix(leaf, ".kv") {
+						lists = append(lists, leaf)
+					}
+				}
+				listsClean := []string{}
+			loop1:
+				for _, list := range lists {
+					for _, clean := range listsClean {
+						if list == clean {
+							continue loop1
+						}
+					}
+					listsClean = append(listsClean, list)
+				}
+				if loc != "" && len(listsClean) == 0 {
+					return fmt.Errorf("no lists found in %v", loc)
+				}
+				listsNum := len(listsClean)
+				keys := 0
+				vals := 0
+				badVal := 0
+				for _, loc := range listsClean {
+					keep := false
+					kvmap := keyval.MapCollection(loc)
+					for _, v := range kvmap {
+						switch v {
+						case "":
+							badVal++
+						default:
+							keep = true
+						}
+						keys++
+					}
+				}
+				report := ""
+				report += fmt.Sprintf("Lists found     : %v\n", listsNum)
+				report += fmt.Sprintf("Keys found      : %v\n", keys)
+				report += fmt.Sprintf("Values found    : %v\n", vals)
+				pst := float64(int((float64(vals)/float64(keys))*10000)) / 100
+				if badVal == 0 {
+					pst = 100.0
+				}
+				report += fmt.Sprintf("Database Health : %v", pst) + " %\n"
+				fmt.Println(report)
+				return nil
+			},
+		},
+
+		{
 			Name:        "write",
 			Usage:       "set/change k-v pair to database",
 			UsageText:   "-location -key key1 -val value1",
