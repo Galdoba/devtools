@@ -49,6 +49,7 @@ func main() {
 		return nil
 	}
 	app.Commands = []*cli.Command{
+		//newlist
 		{
 			Name:        "newlist",
 			Usage:       "kval newlist [list1]...",
@@ -102,6 +103,7 @@ func main() {
 				return nil
 			},
 		},
+		//print
 		{
 			Name:        "print",
 			Usage:       "kval print [list1]...",
@@ -158,6 +160,7 @@ func main() {
 				return nil
 			},
 		},
+		//stats
 		{
 			Name:        "stats",
 			Usage:       "kval stats",
@@ -224,6 +227,7 @@ func main() {
 				return nil
 			},
 		},
+		//clean
 		{
 			Name:        "clean",
 			Usage:       "delete bad keys and empty lists",
@@ -241,7 +245,6 @@ func main() {
 						fullTree = append(fullTree, directory.Tree(keyval.MakePath(arg))...)
 					}
 				}
-
 				for _, leaf := range fullTree {
 					if strings.HasSuffix(leaf, ".kv") {
 						lists = append(lists, leaf)
@@ -260,37 +263,39 @@ func main() {
 				if loc != "" && len(listsClean) == 0 {
 					return fmt.Errorf("no lists found in %v", loc)
 				}
-				listsNum := len(listsClean)
-				keys := 0
-				vals := 0
-				badVal := 0
+
+				keepMap := make(map[string]bool)
 				for _, loc := range listsClean {
 					keep := false
 					kvmap := keyval.MapCollection(loc)
-					for _, v := range kvmap {
-						switch v {
-						case "":
-							badVal++
-						default:
-							keep = true
-						}
-						keys++
+					if len(kvmap) == 0 {
+						keepMap[loc] = keep
+						break
+					}
+					kv, err := keyval.LoadCollection(loc)
+					if err != nil {
+						return err
+					}
+					if err := keyval.SaveCollection(kv); err != nil {
+						return err
 					}
 				}
-				report := ""
-				report += fmt.Sprintf("Lists found     : %v\n", listsNum)
-				report += fmt.Sprintf("Keys found      : %v\n", keys)
-				report += fmt.Sprintf("Values found    : %v\n", vals)
-				pst := float64(int((float64(vals)/float64(keys))*10000)) / 100
-				if badVal == 0 {
-					pst = 100.0
+				removed := 0
+				for k, v := range keepMap {
+					if v {
+						continue
+					}
+					if err := os.Remove(k); err != nil {
+						return nil
+					}
+					removed++
 				}
-				report += fmt.Sprintf("Database Health : %v", pst) + " %\n"
+				report := fmt.Sprintf("lists deleted: %v", removed)
 				fmt.Println(report)
 				return nil
 			},
 		},
-
+		//write
 		{
 			Name:        "write",
 			Usage:       "set/change k-v pair to database",
@@ -343,6 +348,7 @@ func main() {
 				return nil
 			},
 		},
+		//append
 		{
 			Name:        "append",
 			Usage:       "adds value to k-v pair in database",
@@ -408,6 +414,7 @@ func main() {
 				return nil
 			},
 		},
+		//read
 		{
 			Name:        "read",
 			Usage:       "return list of all values for key",
