@@ -1,6 +1,7 @@
 package keyval
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -8,15 +9,11 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-
-	"github.com/Galdoba/devtools/directory"
 )
 
 const (
-	KVRecordSep = "<=}\n"
-	KVUnitSep   = "{=>"
-	key         = 0
-	val         = 1
+	key = 0
+	val = 1
 )
 
 var baseLocation string
@@ -37,96 +34,84 @@ func init() {
 	baseLocation = userDir + sep + ".keyval" + sep
 }
 
-// MakePath - assemble path for collection with input data
-func MakePath(path string) string {
-	if strings.HasSuffix(path, ".kv") && strings.HasPrefix(path, baseLocation) {
+func MakePathJS(path string) string {
+	if strings.HasSuffix(path, ".json") && strings.HasPrefix(path, baseLocation) {
 		return path
 	}
 	dirs := strings.Split(path, sep)
 	if dirs[len(dirs)-1] == "" {
 		return baseLocation + path
 	}
-	return baseLocation + path + ".kv"
+	return baseLocation + path + ".json"
 }
 
-func MapCollection(path string) map[string]string {
-	path = MakePath(path)
-	kvmap := make(map[string]string)
-	files := directory.Tree(path)
-	for _, fl := range files {
-		if !strings.HasSuffix(fl, ".kv") {
-			continue
-		}
-		rawData, _ := os.ReadFile(fl)
-		fmtData := strings.Split(string(rawData[:]), "\n")
-		for _, scope := range fmtData {
-			data := strings.Split(scope, KVUnitSep)
-			if data[key] == "" {
-				continue
-			}
-			value := strings.Join(data[val:], KVUnitSep)
-			kvmap[data[key]] = cleanCrLf(value)
-		}
-	}
-
-	return kvmap
+type kvalData struct {
+	Path   string              `json:"Source"`
+	KVpair map[string][]string `json:"Data,omitempty"`
 }
 
-type collection struct {
-	path string
-	kval map[string]string
-}
-
-func NewCollection(path string) (*collection, error) {
-	c := collection{}
-	fullpath := MakePath(path)
-	if !strings.HasSuffix(fullpath, ".kv") {
+func NewKVlist(path string) (*kvalData, error) {
+	kv := kvalData{}
+	fullpath := MakePathJS(path)
+	if !strings.HasSuffix(fullpath, ".json") {
 		return nil, fmt.Errorf("can't create: path must not be a directory")
 	}
 
-	c.path = fullpath
+	kv.Path = fullpath
 
-	pres, err := Present(c.path)
+	pres, err := Present(kv.Path)
 	if err != nil {
 		return nil, fmt.Errorf("can't create: %v", err.Error())
 	}
 	if pres {
-		return nil, fmt.Errorf("can't create: collection is already present")
+		return nil, fmt.Errorf("can't create: list is already present")
 	}
 
-	err = os.MkdirAll(filepath.Dir(c.path), os.ModePerm)
+	err = os.MkdirAll(filepath.Dir(kv.Path), os.ModePerm)
 	if err != nil {
-		return &c, fmt.Errorf("os.MkdirAll(%v): %v", c.path, err.Error())
+		return &kv, fmt.Errorf("os.MkdirAll(%v): %v", kv.Path, err.Error())
 	}
 
-	f, errf := os.Create(c.path)
+	f, errf := os.Create(kv.Path)
 	if errf != nil {
-		return &c, fmt.Errorf("os.Create(%v): %v", c.path, errf.Error())
+		return &kv, fmt.Errorf("os.Create(%v): %v", kv.Path, errf.Error())
 	}
 	defer f.Close()
-	c.kval = make(map[string]string)
-	return &c, nil
+	kv.KVpair = make(map[string][]string)
+
+	return &kv, nil
 }
 
-func SliceValues(str string) []string {
-	return strings.Split(str, KVUnitSep)
+func (kv *kvalData) Save() error {
+	//data, err := kv.MarshalJSON()
+	data, err := json.MarshalIndent(kv, "", "  ")
+	if err != nil {
+		return fmt.Errorf("can't save: %v", err.Error())
+	}
+	f, err := os.OpenFile(kv.Path, os.O_WRONLY|os.O_CREATE, 0755)
+	if err != nil {
+		return fmt.Errorf("can't save '%v': %v", kv.Path, err.Error())
+	}
+	defer f.Close()
+
+	if err := f.Truncate(0); err != nil {
+		return fmt.Errorf("can't save '%v': %v", kv.Path, err.Error())
+	}
+	if _, err = f.Write(data); err != nil {
+		return fmt.Errorf("can't write to '%v': %v", kv.Path, err.Error())
+	}
+	return nil
 }
 
-// separator = :::    key1{=>val1{=>val2<=}\n
-//
-//	|=>
-//
-// <===>
-// <=|/n
-func LoadCollection(path string) (*collection, error) {
-	fullpath := MakePath(path)
+func Load(name string) (*kvalData, error) {
+	fullpath := MakePathJS(name)
 
 	pres, err := Present(fullpath)
 	if err != nil {
-		return nil, fmt.Errorf("can't confirm collection at '%v'", path)
+		return nil, fmt.Errorf("can't confirm collection at '%v'", fullpath)
 	}
 	if !pres {
-		return nil, fmt.Errorf("no collection at '%v'", path)
+		return nil, fmt.Errorf("no collection at '%v'", fullpath)
 	}
 	if err := isDirError(fullpath); err != nil {
 		return nil, fmt.Errorf("can not read: %v", err.Error())
@@ -135,111 +120,179 @@ func LoadCollection(path string) (*collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("can not read: %v", err.Error())
 	}
-	fmtData := strings.Split(string(rawData[:]), KVRecordSep)
-	c := collection{}
-	c.path = fullpath
-	c.kval = make(map[string]string)
-	for _, scope := range fmtData {
-		data := strings.Split(scope, KVUnitSep)
-		value := strings.Join(data[val:], KVUnitSep)
-		c.kval[data[key]] = cleanCrLf(value)
+	kv := &kvalData{}
+	//	kv.UnmarshalJSON(rawData)
+	err = json.Unmarshal(rawData, kv)
+	if kv.KVpair == nil {
+		kv.KVpair = make(map[string][]string)
 	}
-	return &c, nil
-}
-
-func cleanCrLf(s string) string {
-	s = strings.TrimSuffix(s, "\n")
-	s = strings.TrimSuffix(s, "\r")
-	return s
-}
-
-func SaveCollection(c Kval) error {
-	f, err := os.OpenFile(c.Path(), os.O_WRONLY|os.O_CREATE, 0755)
 	if err != nil {
-		return fmt.Errorf("can't save '%v': %v", c.Path(), err.Error())
+		return nil, fmt.Errorf("can't Load '%v': %v", name, err.Error())
 	}
-	defer f.Close()
-	keys, vals := c.List()
-	text := ""
-	for i, k := range keys {
-		if k == "" {
-			continue
-		}
-		text += keys[i] + KVUnitSep + vals[i] + KVRecordSep
+
+	return kv, nil
+}
+
+func (kv *kvalData) Set(key string, vals ...string) error {
+	if len(vals) == 0 {
+		return fmt.Errorf("can't set zero values (use Clear() insted)")
 	}
-	if text == "" {
-		return nil
-	}
-	if err := f.Truncate(0); err != nil {
-		return fmt.Errorf("can't save '%v': %v", c.Path(), err.Error())
-	}
-	if _, err = f.WriteString(text); err != nil {
-		return fmt.Errorf("can't write to '%v': %v", c.Path(), err.Error())
-	}
+	kv.KVpair[key] = vals
 	return nil
 }
 
-func DeleteCollection(name string) error {
-	path := MakePath(name)
-	if err := isDirError(path); err != nil {
-		return fmt.Errorf("can't delete: %v", err.Error())
+func (kv *kvalData) Add(key string, vals ...string) error {
+	if len(vals) == 0 {
+		return fmt.Errorf("no values to add")
 	}
-	if err := os.Remove(path); err != nil {
-		return fmt.Errorf("can't delete: %v", err.Error())
-	}
+	kv.KVpair[key] = append(kv.KVpair[key], vals...)
 	return nil
 }
 
-type Kval interface {
-	Path() string
-	List() ([]string, []string)
-	Get(string) string
-	Set(string, string)
-	Destroy() error
-}
-
-func (c *collection) Path() string {
-	return c.path
-}
-
-func (c *collection) List() ([]string, []string) {
-	ks := []string{}
-	for k := range c.kval {
-		if k == "" {
-			continue
+func (kv *kvalData) UpdateByVal(key string, val string, newVal string) (int, error) {
+	values := kv.KVpair[key]
+	updated := 0
+	for i, present := range values {
+		if present == val {
+			kv.KVpair[key][i] = newVal
+			updated++
 		}
-		ks = append(ks, k)
 	}
-	sort.Strings(ks)
-	vls := []string{}
-	for _, k := range ks {
-		vls = append(vls, c.kval[k])
+	return updated, nil
+}
+
+func (kv *kvalData) UpdateByIndex(key string, newVal string, indexes ...int) (int, error) {
+	values := kv.KVpair[key]
+	updated := 0
+	filteredInd := []int{}
+	for i, in := range indexes {
+		filteredInd = appendUniqueInt(filteredInd, in)
+		if i > len(values)-1 {
+			return 0, fmt.Errorf("can't update by index: out of bound index provided")
+		}
+		if in < 0 {
+			return 0, fmt.Errorf("can't update by index: negative index provided")
+		}
 	}
-	return ks, vls
-}
-
-func (c *collection) Get(key string) string {
-	if v, ok := c.kval[key]; ok {
-		return v
+	if len(filteredInd) != len(indexes) {
+		return 0, fmt.Errorf("can't update by index: duplicated indexes provided")
 	}
-	return "[NULL]"
+	for _, index := range indexes {
+		kv.KVpair[key][index] = newVal
+		updated++
+	}
+	return updated, nil
 }
 
-func (c *collection) Set(key, val string) {
-	c.kval[key] = val
+func appendUniqueInt(sl []int, i int) []int {
+	for _, in := range sl {
+		if in == i {
+			return sl
+		}
+	}
+	return append(sl, i)
+
 }
 
-func (c *collection) Clear(key string) {
-	delete(c.kval, key)
+func (kv *kvalData) GetSingle(key string) (string, error) {
+	vals, ok := kv.KVpair[key]
+	switch ok {
+	case false:
+		return "", fmt.Errorf("no values on key '%s'", key)
+	default:
+		if len(vals) != 1 {
+			return "", fmt.Errorf("muliple values found on key '%s'", key)
+		}
+		return vals[0], nil
+	}
 }
 
-func (c *collection) Destroy() error {
-	return os.Remove(c.Path())
+func (kv *kvalData) GetAll(key string) ([]string, error) {
+	vals, ok := kv.KVpair[key]
+	switch ok {
+	case false:
+		return nil, fmt.Errorf("no values on key '%s'", key)
+	default:
+		return vals, nil
+	}
 }
 
-// /////////////////////////////helpers
+func (kv *kvalData) GetByIndex(key string, indexes ...int) ([]string, error) {
+	vals, ok := kv.KVpair[key]
+	switch ok {
+	case false:
+		return nil, fmt.Errorf("no values on key '%s'", key)
+	default:
+		res := []string{}
+		for i, ind := range indexes {
+			if ind < 0 {
+				return nil, fmt.Errorf("negative index provided (index %d = %d)", i, ind)
+			}
+			if ind > len(vals)-1 {
+				return nil, fmt.Errorf("out of bound index provided (index %d = %d)", i, ind)
+			}
+			res = append(res, vals[ind])
+		}
+		return res, nil
+	}
+}
+
+func (kv *kvalData) RemoveByVal(key string, vals ...string) error {
+	keep := []string{}
+	have := kv.KVpair[key]
+	if len(vals) == 0 {
+		return fmt.Errorf("can't remove: input have zero values")
+	}
+	if len(have) == 0 {
+		return fmt.Errorf("can't remove: nothing to remove from")
+	}
+mLoop:
+	for _, present := range have {
+		for _, check := range vals {
+			if present == check {
+				continue mLoop
+			}
+		}
+		keep = append(keep, present)
+	}
+	kv.KVpair[key] = keep
+	return nil
+}
+
+func (kv *kvalData) RemoveByKey(key string) error {
+	_, err := kv.GetAll(key)
+	if err != nil {
+		return err
+	}
+	delete(kv.KVpair, key)
+	return nil
+}
+
+func Delete(kv *kvalData) error {
+	path := kv.Path
+	fmt.Println(path)
+	js, err := os.Stat(path)
+	if js.IsDir() {
+		return fmt.Errorf("can't delete: %v", err)
+	}
+	if err != nil {
+		return fmt.Errorf("can't delete: %v", err)
+	}
+	kv = nil
+	return os.Remove(path)
+}
+
+func appendUnique(sl []string, s string) []string {
+	for _, str := range sl {
+		if str == s {
+			return sl
+		}
+	}
+	return append(sl, s)
+}
+
 func Present(name string) (bool, error) {
-	path := MakePath(name)
+	path := MakePathJS(name)
 	if _, err := os.Stat(path); err == nil {
 		return true, nil
 	} else if errors.Is(err, os.ErrNotExist) {
@@ -247,6 +300,40 @@ func Present(name string) (bool, error) {
 	} else {
 		return false, fmt.Errorf("file may or may not exist: %v", err.Error())
 	}
+}
+
+func KVlistPresent(path string) bool {
+	switch strings.HasSuffix(path, ".json") {
+	case true:
+		f, err := os.Stat(path)
+		if err != nil {
+			return false
+		}
+		if f.IsDir() {
+			return false
+		}
+		return true
+	default:
+		path = MakePathJS(path)
+		_, err := os.Stat(path)
+		if err != nil {
+			return false
+		}
+		return true
+	}
+}
+
+func (kv *kvalData) Data() map[string][]string {
+	return kv.KVpair
+}
+
+func (kv *kvalData) Keys() []string {
+	keys := []string{}
+	for k := range kv.KVpair {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func isDirError(path string) error {

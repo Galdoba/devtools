@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/Galdoba/devtools/directory"
@@ -51,18 +52,11 @@ func main() {
 	app.Commands = []*cli.Command{
 		//newlist
 		{
-			Name:        "newlist",
-			Usage:       "kval newlist [list1]...",
-			UsageText:   "create new list of k-v pairs",
+			Name:        "new",
+			Usage:       "create new list of k-v pairs",
+			UsageText:   "kval newlist [list1]...",
 			Description: "TODO: подробное описание команды",
 			ArgsUsage:   "args as names if new lists",
-			Category:    "Create",
-			Flags: []cli.Flag{
-				&cli.BoolFlag{
-					Name:    "force_new",
-					Aliases: []string{"fn"},
-				},
-			},
 			Action: func(c *cli.Context) error {
 				args := c.Args()
 				if len(args.Slice()) == 0 {
@@ -73,32 +67,24 @@ func main() {
 				for _, arg := range args.Slice() {
 					present, err := keyval.Present(arg)
 					if err != nil {
-						warnings = append(warnings, err.Error())
-						continue
+						return err
 					}
 					if present {
-						if !c.Bool("fn") {
-							warnings = append(warnings, fmt.Sprintf("list %v is present", arg))
-							continue
-						}
-						err = keyval.DeleteCollection(arg)
-						if err != nil {
-							return err
-						}
+						return fmt.Errorf("list '%v' is present", arg)
 					}
-					_, err = keyval.NewCollection(arg)
+					kv, err := keyval.NewKVlist(arg)
 					if err != nil {
-						warnings = append(warnings, err.Error())
-						continue
+						return err
 					}
 					msg = fmt.Sprintf("list '%v' created", arg)
 					created++
-
 					if c.Bool("verbose") {
 						fmt.Println(msg)
 					}
+					if err := kv.Save(); err != nil {
+						return err
+					}
 				}
-
 				fmt.Printf("Lists created: %v\n", created)
 				return nil
 			},
@@ -106,24 +92,24 @@ func main() {
 		//print
 		{
 			Name:        "print",
-			Usage:       "kval print [list1]...",
-			UsageText:   "print list of k-v pairs",
+			Usage:       "print lists of k-v pairs",
+			UsageText:   "kval print [list1]...",
 			Description: "TODO: подробное описание команды",
 			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
-			Category:    "Info",
+			Category:    "Read",
 			Action: func(c *cli.Context) error {
 				fullTree := []string{}
 				args := c.Args()
 				switch args.Len() {
 				case 0:
-					fullTree = directory.Tree(keyval.MakePath(""))
+					fullTree = directory.Tree(keyval.MakePathJS(""))
 				default:
 					for _, arg := range args.Slice() {
-						fullTree = append(fullTree, directory.Tree(keyval.MakePath(arg))...)
+						fullTree = append(fullTree, directory.Tree(keyval.MakePathJS(arg))...)
 					}
 				}
 				for _, leaf := range fullTree {
-					if strings.HasSuffix(leaf, ".kv") {
+					if keyval.KVlistPresent(leaf) {
 						lists = append(lists, leaf)
 					}
 				}
@@ -141,20 +127,24 @@ func main() {
 					return fmt.Errorf("no lists found in %v", loc)
 				}
 				for _, path := range listsClean {
-					kv, err := keyval.LoadCollection(path)
+					kv, err := keyval.Load(path)
 					if err != nil {
 						return err
 					}
-					prntArg := false
-					keys, vals := kv.List()
-					for i, k := range keys {
-						if k != "" {
-							if !prntArg {
-								prntArg = true
-								fmt.Println(path)
-							}
-							fmt.Printf("%v ==> %v\n", k, vals[i])
+
+					text := fmt.Sprintf("Source: %v\n", kv.Path)
+					for _, k := range kv.Keys() {
+						vals, err := kv.GetAll(k)
+						if err != nil {
+							return err
 						}
+						text += fmt.Sprintf("%s: [", k)
+						for _, v := range vals {
+							text += `"` + v + `"` + ", "
+						}
+						text = strings.TrimSuffix(text, ", ")
+						text += "]"
+						fmt.Printf("%s\n", text)
 					}
 				}
 				return nil
@@ -163,25 +153,25 @@ func main() {
 		//stats
 		{
 			Name:        "stats",
-			Usage:       "kval stats",
-			UsageText:   "print info about database",
+			Usage:       "print info about database",
+			UsageText:   "kval stats",
 			Description: "TODO: подробное описание команды",
 			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
-			Category:    "Info",
+			Category:    "Delete",
 			Action: func(c *cli.Context) error {
 				fullTree := []string{}
 				args := c.Args()
 				switch args.Len() {
 				case 0:
-					fullTree = directory.Tree(keyval.MakePath(""))
+					fullTree = directory.Tree(keyval.MakePathJS(""))
 				default:
 					for _, arg := range args.Slice() {
-						fullTree = append(fullTree, directory.Tree(keyval.MakePath(arg))...)
+						fullTree = append(fullTree, directory.Tree(keyval.MakePathJS(arg))...)
 					}
 				}
 
 				for _, leaf := range fullTree {
-					if strings.HasSuffix(leaf, ".kv") {
+					if keyval.KVlistPresent(leaf) {
 						lists = append(lists, leaf)
 					}
 				}
@@ -201,96 +191,21 @@ func main() {
 				listsNum := len(listsClean)
 				keys := 0
 				vals := 0
-				badVal := 0
 				for _, loc := range listsClean {
-					kvmap := keyval.MapCollection(loc)
+					kv, err := keyval.Load(loc)
+					if err != nil {
+						return err
+					}
+					kvmap := kv.Data()
 					for _, v := range kvmap {
-						switch v {
-						case "":
-							badVal++
-						default:
-							vals++
-						}
+						vals = vals + len(v)
 						keys++
 					}
 				}
 				report := ""
 				report += fmt.Sprintf("Lists found     : %v\n", listsNum)
 				report += fmt.Sprintf("Keys found      : %v\n", keys)
-				report += fmt.Sprintf("Values found    : %v\n", vals)
-				pst := float64(int((float64(vals)/float64(keys))*10000)) / 100
-				if badVal == 0 {
-					pst = 100.0
-				}
-				report += fmt.Sprintf("Database Health : %v", pst) + " %\n"
-				fmt.Println(report)
-				return nil
-			},
-		},
-		//clean
-		{
-			Name:        "clean",
-			Usage:       "delete bad keys and empty lists",
-			Description: "TODO: подробное описание команды",
-			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
-			Category:    "Info",
-			Action: func(c *cli.Context) error {
-				fullTree := []string{}
-				args := c.Args()
-				switch args.Len() {
-				case 0:
-					fullTree = directory.Tree(keyval.MakePath(""))
-				default:
-					for _, arg := range args.Slice() {
-						fullTree = append(fullTree, directory.Tree(keyval.MakePath(arg))...)
-					}
-				}
-				for _, leaf := range fullTree {
-					if strings.HasSuffix(leaf, ".kv") {
-						lists = append(lists, leaf)
-					}
-				}
-				listsClean := []string{}
-			loop1:
-				for _, list := range lists {
-					for _, clean := range listsClean {
-						if list == clean {
-							continue loop1
-						}
-					}
-					listsClean = append(listsClean, list)
-				}
-				if loc != "" && len(listsClean) == 0 {
-					return fmt.Errorf("no lists found in %v", loc)
-				}
-
-				keepMap := make(map[string]bool)
-				for _, loc := range listsClean {
-					keep := false
-					kvmap := keyval.MapCollection(loc)
-					if len(kvmap) == 0 {
-						keepMap[loc] = keep
-						break
-					}
-					kv, err := keyval.LoadCollection(loc)
-					if err != nil {
-						return err
-					}
-					if err := keyval.SaveCollection(kv); err != nil {
-						return err
-					}
-				}
-				removed := 0
-				for k, v := range keepMap {
-					if v {
-						continue
-					}
-					if err := os.Remove(k); err != nil {
-						return nil
-					}
-					removed++
-				}
-				report := fmt.Sprintf("lists deleted: %v", removed)
+				report += fmt.Sprintf("Values found    : %v", vals)
 				fmt.Println(report)
 				return nil
 			},
@@ -299,10 +214,9 @@ func main() {
 		{
 			Name:        "write",
 			Usage:       "set/change k-v pair to database",
-			UsageText:   "-location -key key1 -val value1",
-			Description: "TODO: подробное описание команды",
-			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
-			Category:    "Control",
+			UsageText:   "-location -key key1 {vals}...",
+			Description: "Заменяет все значения для указанного ключа на значения указанные в аргументах",
+			Category:    "Update",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "location",
@@ -325,24 +239,21 @@ func main() {
 						"k",
 					},
 				},
-				&cli.StringFlag{
-					Name:     "value",
-					Category: "Args",
-					Usage:    "set value argument",
-					Required: true,
-					Aliases: []string{
-						"v",
-					},
-				},
 			},
 			Action: func(c *cli.Context) error {
-				kv, err := keyval.LoadCollection(c.String("loc"))
+				kv, err := keyval.Load(c.String("loc"))
 				if err != nil {
 					return err
 
 				}
-				kv.Set(c.String("k"), c.String("v"))
-				if keyval.SaveCollection(kv) != nil {
+				vals := c.Args().Slice()
+				if len(vals) == 0 {
+					return fmt.Errorf("no arguments provided")
+				}
+				if err := kv.Set(c.String("k"), vals...); err != nil {
+					return err
+				}
+				if err := kv.Save(); err != nil {
 					return err
 				}
 				return nil
@@ -377,38 +288,17 @@ func main() {
 						"k",
 					},
 				},
-				&cli.StringFlag{
-					Name:     "value",
-					Category: "Args",
-					Usage:    "set value argument",
-					Required: true,
-					Aliases: []string{
-						"v",
-					},
-				},
 			},
 			Action: func(c *cli.Context) error {
-				kv, err := keyval.LoadCollection(c.String("loc"))
+				kv, err := keyval.Load(c.String("loc"))
 				if err != nil {
 					return err
-
 				}
-				val := kv.Get(c.String("k"))
-				nval := ""
-				switch val {
-				default:
-					valSl := keyval.SliceValues(kv.Get(c.String("k")))
-					for _, vl := range valSl {
-						if vl == c.String("v") {
-							return nil
-						}
-					}
-					nval = val + keyval.KVUnitSep + c.String("v")
-				case "":
-					nval = c.String("v")
+				vals := c.Args().Slice()
+				if err := kv.Add(c.String("k"), vals...); err != nil {
+					return err
 				}
-				kv.Set(c.String("k"), nval)
-				if keyval.SaveCollection(kv) != nil {
+				if err := kv.Save(); err != nil {
 					return err
 				}
 				return nil
@@ -418,9 +308,9 @@ func main() {
 		{
 			Name:        "read",
 			Usage:       "return list of all values for key",
-			UsageText:   "-location -key key1",
+			UsageText:   "-location -key key1 [index]...",
 			Description: "TODO: подробное описание команды",
-			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
+			ArgsUsage:   "Принимает индексы (целые числа). Если индексов нет - выводит все значения",
 			Category:    "Control",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
@@ -446,26 +336,144 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) error {
-				kv, err := keyval.LoadCollection(c.String("loc"))
+				key := c.String("k")
+				indexes := []int{}
+				for n, val := range c.Args().Slice() {
+					i, err := strconv.Atoi(val)
+					if err != nil {
+						return fmt.Errorf("incorrect index passed %v (%v): %v", n, val, err.Error())
+					}
+					indexes = append(indexes, i)
+				}
+				kv, err := keyval.Load(c.String("loc"))
 				if err != nil {
 					return err
-
 				}
-				val := kv.Get(c.String("k"))
-				vals := keyval.SliceValues(val)
-				for _, vl := range vals {
-					if strings.Contains(vl, "\n") {
-						switch {
-						case strings.HasPrefix(vl, `"`) && strings.HasSuffix(vl, `"`):
-							vl = "`" + vl + "`"
-						default:
-							vl = `"` + vl + `"`
 
+				one, err := kv.GetSingle(key)
+				if err == nil {
+					fmt.Println(one)
+					return nil
+				}
+
+				many, err := kv.GetAll(key)
+				if err != nil {
+					return err
+				}
+				res := ""
+				switch len(indexes) {
+				case 0:
+					for _, vl := range many {
+						res += fmt.Sprintf("%v\n", vl)
+					}
+				default:
+					vals, err := kv.GetByIndex(key, indexes...)
+					if err != nil {
+						return fmt.Errorf("incorrect index passed: %v", err.Error())
+					}
+					for _, v := range vals {
+						res += v + "\n"
+					}
+				}
+				fmt.Printf("%v", res)
+				return nil
+			},
+		},
+		//remove
+		{
+			Name:        "remove",
+			Usage:       "set/change k-v pair to database",
+			UsageText:   "-location -key key1 -val value1",
+			Description: "TODO: подробное описание команды",
+			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
+			Category:    "Control",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "location",
+					Category: "Context",
+					Usage:    "set book/chapter/list with one argument",
+					Required: true,
+					Aliases: []string{
+						"to",
+						"from",
+						"page",
+						"loc",
+					},
+				},
+				&cli.StringFlag{
+					Name:     "key",
+					Category: "Args",
+					Usage:    "set key argument",
+					Required: true,
+					Aliases: []string{
+						"k",
+					},
+				},
+				&cli.StringFlag{
+					Name:     "value",
+					Category: "Args",
+					Usage:    "set value argument",
+					Aliases: []string{
+						"v",
+					},
+				},
+			},
+			Action: func(c *cli.Context) error {
+				key := c.String("k")
+				kv, err := keyval.Load(c.String("loc"))
+				if err != nil {
+					return err
+				}
+				switch c.String("v") {
+				case "":
+					err := kv.RemoveByKey(key)
+					if err != nil {
+						return err
+					}
+				default:
+					switch len(kv.Data()[key]) {
+					case 1:
+						err := kv.RemoveByKey(key)
+						if err != nil {
+							return err
+						}
+					default:
+						err := kv.RemoveByVal(key, c.String("v"))
+						if err != nil {
+							return err
 						}
 					}
-					fmt.Println(vl)
 				}
-
+				return kv.Save()
+			},
+		},
+		//delete
+		{
+			Name:        "delete",
+			Usage:       "delete list from database",
+			UsageText:   "-location",
+			Description: "TODO: подробное описание команды",
+			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
+			Category:    "Control",
+			Action: func(c *cli.Context) error {
+				vals := c.Args().Slice()
+				for _, val := range vals {
+					path := keyval.MakePathJS(val)
+					present, err := keyval.Present(path)
+					if err != nil {
+						return err
+					}
+					if !present {
+						return fmt.Errorf("no list found")
+					}
+					f, _ := os.Stat(path)
+					if f.IsDir() {
+						return fmt.Errorf("'%v' is a directory", path)
+					}
+					if err := os.Remove(path); err != nil {
+						return fmt.Errorf("can't remove %v: %v", path, err.Error())
+					}
+				}
 				return nil
 			},
 		},

@@ -6,30 +6,32 @@ import (
 )
 
 func TestKV(t *testing.T) {
+	kv, err1 := NewKVlist("test")
+	if err1 != nil {
+		t.Errorf("%v", err1.Error())
+	}
+	fmt.Println(kv)
+	err2 := kv.Save()
+	if err2 != nil {
+		fmt.Println(err2.Error())
+	}
+	kv, err := Load("test")
+	if err != nil {
+		t.Errorf("%v", err.Error())
+	}
+	kv.KVpair["key1"] = []string{"val1", "val2"}
 
-	kv2, err := LoadCollection("Goo")
-	if err != nil {
-		fmt.Println(err.Error())
-		kv2, err = NewCollection("Goo")
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		fmt.Println("Created NEW")
-	}
-	fmt.Println(kv2.Get("foo2"))
-	kv2.Set("FOO", "BAR")
-	kv2.Set("FOO1", "BAR2")
-	kv2.Set("FOO3", "BAR4")
-	kv2.Set("FOO5", "BAR6")
-	err = SaveCollection(kv2)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	fmt.Println(kv2.Get("FOO5"))
-	fmt.Println(kv2.Get("Baaard"))
-	//err = DeleteCollection(kv2)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
+	err3 := kv.Save()
+	if err3 != nil {
 
+		t.Errorf("%v", err3.Error())
+	}
+	kv2, _ := Load("test")
+	if _, err := kv.UpdateByIndex("key1", []int{1, -2}, "val7"); err != nil {
+		fmt.Println(err.Error())
+	}
+	kv2.Remove("key1", "val3")
+	kv2.Save()
+	fmt.Println(kv)
+	Delete(kv2)
 }
