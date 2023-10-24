@@ -292,7 +292,6 @@ func (kv *kvalData) RemoveByKey(key string) error {
 
 func Delete(kv *kvalData) error {
 	path := kv.Path
-	fmt.Println(path)
 	js, err := os.Stat(path)
 	if js.IsDir() {
 		return fmt.Errorf("can't delete: %v", err)
