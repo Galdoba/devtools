@@ -35,6 +35,12 @@ func init() {
 }
 
 func MakePathJS(path string) string {
+	for _, s := range []string{`\`, `/`} {
+		pth := strings.Split(path, s)
+		if len(pth) > 1 {
+			path = strings.ReplaceAll(path, s, sep)
+		}
+	}
 	if strings.HasSuffix(path, ".json") && strings.HasPrefix(path, baseLocation) {
 		return path
 	}
@@ -58,7 +64,6 @@ func NewKVlist(path string) (*kvalData, error) {
 	}
 
 	kv.Path = fullpath
-
 	pres, err := Present(kv.Path)
 	if err != nil {
 		return nil, fmt.Errorf("can't create: %v", err.Error())
@@ -78,12 +83,16 @@ func NewKVlist(path string) (*kvalData, error) {
 	}
 	defer f.Close()
 	kv.KVpair = make(map[string][]string)
-
+	err = kv.Save()
+	if err != nil {
+		return &kv, err
+	}
 	return &kv, nil
 }
 
 func (kv *kvalData) Save() error {
 	//data, err := kv.MarshalJSON()
+	fmt.Println(kv.Path)
 	data, err := json.MarshalIndent(kv, "", "  ")
 	if err != nil {
 		return fmt.Errorf("can't save: %v", err.Error())
@@ -103,7 +112,8 @@ func (kv *kvalData) Save() error {
 	return nil
 }
 
-func Load(name string) (*kvalData, error) {
+func Load(name string, flag ...int) (*kvalData, error) {
+
 	fullpath := MakePathJS(name)
 
 	pres, err := Present(fullpath)
@@ -111,6 +121,11 @@ func Load(name string) (*kvalData, error) {
 		return nil, fmt.Errorf("can't confirm collection at '%v'", fullpath)
 	}
 	if !pres {
+		for _, f := range flag {
+			if f == os.O_CREATE {
+				return NewKVlist(name)
+			}
+		}
 		return nil, fmt.Errorf("no collection at '%v'", fullpath)
 	}
 	if err := isDirError(fullpath); err != nil {
@@ -141,12 +156,19 @@ func (kv *kvalData) Set(key string, vals ...string) error {
 	return nil
 }
 
-func (kv *kvalData) Add(key string, vals ...string) error {
-	if len(vals) == 0 {
-		return fmt.Errorf("no values to add")
+func (kv *kvalData) Add(key string, val string, uniqueOnly bool) error {
+	if !uniqueOnly {
+		kv.KVpair[key] = append(kv.KVpair[key], val)
+		return kv.Save()
 	}
-	kv.KVpair[key] = append(kv.KVpair[key], vals...)
-	return nil
+	containedVals := kv.KVpair[key]
+	for _, check := range containedVals {
+		if check == val {
+			return nil
+		}
+	}
+	kv.KVpair[key] = append(kv.KVpair[key], val)
+	return kv.Save()
 }
 
 func (kv *kvalData) UpdateByVal(key string, val string, newVal string) (int, error) {

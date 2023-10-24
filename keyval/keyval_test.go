@@ -2,36 +2,67 @@ package keyval
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
 func TestKV(t *testing.T) {
-	kv, err1 := NewKVlist("test")
+	kv, err1 := Load("test/test", os.O_CREATE)
+	if err1 != nil {
+		t.Errorf("%v", err1.Error())
+	}
+	fmt.Println("BLANK")
+	fmt.Println(kv)
+	fmt.Println("ADD ANY 1")
+	err1 = kv.Add("k1", "v1", false)
 	if err1 != nil {
 		t.Errorf("%v", err1.Error())
 	}
 	fmt.Println(kv)
-	err2 := kv.Save()
-	if err2 != nil {
-		fmt.Println(err2.Error())
-	}
-	kv, err := Load("test")
-	if err != nil {
-		t.Errorf("%v", err.Error())
-	}
-	kv.KVpair["key1"] = []string{"val1", "val2"}
 
-	err3 := kv.Save()
-	if err3 != nil {
-
-		t.Errorf("%v", err3.Error())
+	fmt.Println("ADD ANY 2")
+	err1 = kv.Add("k1", "v1", false)
+	if err1 != nil {
+		t.Errorf("%v", err1.Error())
 	}
-	kv2, _ := Load("test")
-	if _, err := kv.UpdateByIndex("key1", []int{1, -2}, "val7"); err != nil {
-		fmt.Println(err.Error())
-	}
-	kv2.Remove("key1", "val3")
-	kv2.Save()
 	fmt.Println(kv)
-	Delete(kv2)
+
+	fmt.Println("ADD Unique 1")
+	err1 = kv.Add("k1", "v2", true)
+	if err1 != nil {
+		t.Errorf("%v", err1.Error())
+	}
+	fmt.Println(kv)
+
+	fmt.Println("ADD Unique 2")
+	err1 = kv.Add("k1", "v2", true)
+	if err1 != nil {
+		t.Errorf("%v", err1.Error())
+	}
+	fmt.Println(kv)
+	fmt.Println("Set of 2")
+	err1 = kv.Set("k1", "v3", "true")
+	if err1 != nil {
+		t.Errorf("%v", err1.Error())
+	}
+	fmt.Println(kv)
+
+	fmt.Println("Set of 3")
+	err1 = kv.Set("k1", "v4", "v5", "v6")
+	if err1 != nil {
+		t.Errorf("%v", err1.Error())
+	}
+	fmt.Println(kv)
+
+	fmt.Println("Set of 1")
+	err1 = kv.Set("k1", "v7")
+	if err1 != nil {
+		t.Errorf("%v", err1.Error())
+	}
+	fmt.Println(kv)
+	fmt.Println("Delete")
+	err1 = Delete(kv)
+	if err1 != nil {
+		t.Errorf("%v", err1.Error())
+	}
 }

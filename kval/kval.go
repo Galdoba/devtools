@@ -288,6 +288,15 @@ func main() {
 						"k",
 					},
 				},
+				&cli.BoolFlag{
+					Name:     "unique",
+					Category: "Args",
+					Usage:    "add only unique",
+					Required: false,
+					Aliases: []string{
+						"u",
+					},
+				},
 			},
 			Action: func(c *cli.Context) error {
 				kv, err := keyval.Load(c.String("loc"))
@@ -295,12 +304,14 @@ func main() {
 					return err
 				}
 				vals := c.Args().Slice()
-				if err := kv.Add(c.String("k"), vals...); err != nil {
-					return err
+				for _, val := range vals {
+					if err := kv.Add(c.String("k"), val, c.Bool("u")); err != nil {
+						return err
+					}
 				}
-				if err := kv.Save(); err != nil {
-					return err
-				}
+				// if err := kv.Save(); err != nil {
+				// 	return err
+				// }
 				return nil
 			},
 		},
