@@ -390,6 +390,66 @@ func main() {
 				return nil
 			},
 		},
+		//confirm
+		{
+			Name:        "confirm",
+			Usage:       "return 1 if exist and 0 if not",
+			UsageText:   "-location [-key]...",
+			Description: "TODO: подробное описание команды",
+			ArgsUsage:   "Принимает индексы (целые числа). Если индексов нет - выводит все значения",
+			Category:    "Control",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "location",
+					Category: "Context",
+					Usage:    "set book/chapter/list with one argument",
+					Required: true,
+					Aliases: []string{
+						"to",
+						"from",
+						"page",
+						"loc",
+					},
+				},
+				&cli.StringFlag{
+					Name:     "key",
+					Category: "Args",
+					Usage:    "set key argument",
+					Required: false,
+					Aliases: []string{
+						"k",
+					},
+				},
+			},
+			Action: func(c *cli.Context) error {
+				key := c.String("k")
+
+				kv, err := keyval.Load(c.String("loc"))
+				if err != nil {
+					fmt.Println("0")
+					return nil
+				}
+				if key == "" {
+					fmt.Println("1")
+					return nil
+				}
+
+				one, err := kv.GetSingle(key)
+				if err != nil {
+					fmt.Println("0")
+					return nil
+				}
+				out := ""
+				switch one {
+				case "":
+					out = "0"
+				default:
+					out = "1"
+				}
+				fmt.Println(out)
+				return nil
+			},
+		},
 		//remove
 		{
 			Name:        "remove",
