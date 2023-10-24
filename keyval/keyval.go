@@ -92,7 +92,6 @@ func NewKVlist(path string) (*kvalData, error) {
 
 func (kv *kvalData) Save() error {
 	//data, err := kv.MarshalJSON()
-	fmt.Println(kv.Path)
 	data, err := json.MarshalIndent(kv, "", "  ")
 	if err != nil {
 		return fmt.Errorf("can't save: %v", err.Error())
