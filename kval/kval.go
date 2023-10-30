@@ -144,8 +144,62 @@ func main() {
 						}
 						text = strings.TrimSuffix(text, ", ")
 						text += "]"
-						fmt.Printf("%s\n", text)
 					}
+					fmt.Printf("%s\n", text)
+				}
+				return nil
+			},
+		},
+		//print
+		{
+			Name:        "keys",
+			Usage:       "print keys-only form kval file(s)",
+			UsageText:   "kval keys [list]...",
+			Description: "TODO: подробное описание команды",
+			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
+			Category:    "Read",
+			Action: func(c *cli.Context) error {
+				fullTree := []string{}
+				args := c.Args()
+				switch args.Len() {
+				case 0:
+					fullTree = directory.Tree(keyval.MakePathJS(""))
+				default:
+					for _, arg := range args.Slice() {
+						fullTree = append(fullTree, directory.Tree(keyval.MakePathJS(arg))...)
+					}
+				}
+				for _, leaf := range fullTree {
+					if keyval.KVlistPresent(leaf) {
+						lists = append(lists, leaf)
+					}
+				}
+				listsClean := []string{}
+			loop1:
+				for _, list := range lists {
+					for _, clean := range listsClean {
+						if list == clean {
+							continue loop1
+						}
+					}
+					listsClean = append(listsClean, list)
+				}
+				if loc != "" && len(listsClean) == 0 {
+					return fmt.Errorf("no lists found in %v", loc)
+				}
+				for _, path := range listsClean {
+
+					kv, err := keyval.Load(path)
+					if err != nil {
+						return err
+					}
+					text := fmt.Sprintf("Source: %v\n", kv.Path)
+					for _, k := range kv.Keys() {
+
+						text += fmt.Sprintf("%s\n", k)
+
+					}
+					fmt.Printf("%s", text)
 				}
 				return nil
 			},
