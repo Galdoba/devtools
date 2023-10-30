@@ -147,14 +147,15 @@ func (tc *terminalCommand) StdErr() string {
 	return tc.stErr
 }
 
-func RunSilent(cmmnd string, args ...string) error {
+func RunSilent(cmmnd string, args ...string) (string, error) {
 	comm, err := New(
 		CommandLineArguments(cmmnd, args...),
 		Set(TERMINAL_OFF),
-		Set(BUFFER_OFF),
+		Set(BUFFER_ON),
 	)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return comm.Run()
+	runErr := comm.Run()
+	return comm.StdOut(), runErr
 }
