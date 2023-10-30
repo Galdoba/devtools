@@ -150,7 +150,7 @@ func main() {
 				return nil
 			},
 		},
-		//print
+		//keys
 		{
 			Name:        "keys",
 			Usage:       "print keys-only form kval file(s)",
@@ -507,8 +507,8 @@ func main() {
 		//remove
 		{
 			Name:        "remove",
-			Usage:       "set/change k-v pair to database",
-			UsageText:   "-location -key key1 -val value1",
+			Usage:       "remove specific value from k-v pair",
+			UsageText:   "kval remove -from [list] -key [key] -val [val]",
 			Description: "TODO: подробное описание команды",
 			ArgsUsage:   "Аргументов не имеет\nВ планах локальный режим и указание файла в который должен писаться отчет",
 			Category:    "Control",
