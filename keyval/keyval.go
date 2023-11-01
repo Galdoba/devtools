@@ -366,3 +366,18 @@ func isDirError(path string) error {
 	}
 	return nil
 }
+
+type Kval interface {
+	Save() error
+	Set(string, ...string) error
+	Add(string, string, bool) error
+	UpdateByVal(string, string, string) (int, error)
+	UpdateByIndex(string, string, ...int) (int, error)
+	GetSingle(string) (string, error)
+	GetAll(string) ([]string, error)
+	GetByIndex(string, ...int) ([]string, error)
+	RemoveByVal(string, ...string) error
+	RemoveByKey(string) error
+	Data() map[string][]string
+	Keys() []string
+}
