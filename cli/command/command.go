@@ -73,6 +73,7 @@ func (tc *terminalCommand) Run() error {
 	//Control output for Files
 	for _, fl := range tc.filePaths {
 		f, err := os.OpenFile(fl, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		defer f.Close()
 		if err != nil {
 			panic(err)
 		}
@@ -158,4 +159,21 @@ func RunSilent(cmmnd string, args ...string) (string, error) {
 	}
 	runErr := comm.Run()
 	return comm.StdOut(), runErr
+}
+
+func Execute(comm string, inst ...commandInstruction) (out string, errout string, err error) {
+	args := strings.Split(comm, " ")
+	program := args[0]
+	otherArgs := strings.Join(args[1:], " ")
+	instructions := append([]commandInstruction{}, CommandLineArguments(program, otherArgs))
+	instructions = append(instructions, inst...)
+	cmnd, err := New(instructions...)
+	if err != nil {
+		return "", "", err
+	}
+	err = cmnd.Run()
+	if err != nil {
+		return "", "", err
+	}
+	return cmnd.stOut, cmnd.stErr, nil
 }
