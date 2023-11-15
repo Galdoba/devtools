@@ -1,6 +1,7 @@
 package gpath
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -96,4 +97,39 @@ func newPath(input string) (*pathStr, error) {
 		return &p, fmt.Errorf("osyst is not set [%v]", input)
 	}
 	return &p, nil
+}
+
+func Touch(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	} else if errors.Is(err, os.ErrNotExist) {
+		// path/to/whatever does *not* exist
+		dir := filepath.Dir(path)
+		if err := os.MkdirAll(dir, 0777); err != nil {
+			return err
+		}
+		f, err := os.OpenFile(path, os.O_CREATE, 0777)
+		if err != nil {
+			return err
+		}
+		return f.Close()
+	} else {
+		// Schrodinger: file may or may not exist. See err for details.
+		// Therefore, do *NOT* use !os.IsNotExist(err) to test for file existence
+		return err
+	}
+}
+
+func StdPath(name string, dirs ...string) string {
+	path, err := os.UserHomeDir()
+	if err != nil {
+		panic(err.Error())
+	}
+	sep := string(filepath.Separator)
+	path += sep
+	for _, dir := range dirs {
+		path += dir + sep
+	}
+	return path + name
+
 }

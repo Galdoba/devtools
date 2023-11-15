@@ -23,6 +23,12 @@ func pathInput() []string {
 }
 
 func TestPath(t *testing.T) {
+	// if err := Touch(`c:\Users\pemaltynov\tabviewer\DataFile.csv`); err != nil {
+	// 	t.Errorf(err.Error())
+	// }
+	// fmt.Println(StdPath("data.txt", []string{"category", ".hidden", ".config", "program"}...))
+
+	return
 	for num, input := range pathInput() {
 		n := num + 1
 		fmt.Println("Start test: '" + input + "'")
