@@ -16,14 +16,12 @@ type cellcontent struct {
 	columnWidth   int
 	rawText       string
 	textSeparated []string
+	wrap          bool
 }
 
-func New(width int) (*cellcontent, error) {
+func New() *cellcontent { //, error) {
 	cell := &cellcontent{}
-	if err := cell.SetColumnWidth(width); err != nil {
-		return cell, fmt.Errorf("can't create new content: %v", err.Error())
-	}
-	return cell, nil
+	return cell //, nil
 }
 
 type Content interface {
@@ -62,6 +60,18 @@ func (c *cellcontent) SetColumnWidth(l int) error {
 	return nil
 }
 
+func (c *cellcontent) SetWrap(w bool) {
+	c.wrap = w
+}
+
+func (c *cellcontent) Wrap() bool {
+	return c.wrap
+}
+
+func (c *cellcontent) ToggleWrap() {
+	c.wrap = !c.wrap
+}
+
 ////////////////////////////
 
 func separateGlyphs(text string, rowLen int) []string {
@@ -90,10 +100,12 @@ func align(textSep []string, a int, w int) []string {
 	for i := range textSep {
 		textSep[i] = alighFunc[a](textSep[i], w)
 	}
+
 	return textSep
 }
 
 func addToLenLeft(s string, l int) string {
+	s = strings.TrimSpace(s)
 	for len(s) < l {
 		s += " "
 	}
@@ -101,6 +113,7 @@ func addToLenLeft(s string, l int) string {
 }
 
 func addToLenRight(s string, l int) string {
+	s = strings.TrimSpace(s)
 	for len(s) < l {
 		s = " " + s
 	}
@@ -116,4 +129,25 @@ func addToLenCenter(s string, l int) string {
 		s = strings.TrimPrefix(s, " ")
 	}
 	return s
+}
+
+///////////////////////////////////////////////////////////
+//Print
+func (c *cellcontent) TextRow(r int) string {
+	if r < 0 {
+		return ""
+	}
+	text := c.textSeparated
+	if r > len(text)-1 {
+		return ""
+	}
+	return text[r]
+}
+
+func (c *cellcontent) Text() string {
+	text := c.TextRow(0)
+	if c.wrap && len(c.rawText) > len(text) && len(text) > 3 {
+		text = text[:len(text)-2] + ".."
+	}
+	return text
 }
