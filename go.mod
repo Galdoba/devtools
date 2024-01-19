@@ -1,15 +1,24 @@
 module github.com/Galdoba/devtools
 
-go 1.15
+go 1.18
 
 require (
-	github.com/f1bonacc1/glippy v0.0.0-20230614190937-e7ca07f99f6f // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
-	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/muesli/termenv v0.15.2
 	github.com/nsf/termbox-go v1.1.1
+	github.com/urfave/cli/v2 v2.27.1
+)
+
+require (
+	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
-	github.com/urfave/cli/v2 v2.25.7
-	golang.design/x/clipboard v0.7.0
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/spf13/cobra v1.8.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 )
