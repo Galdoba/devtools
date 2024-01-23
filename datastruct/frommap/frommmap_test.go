@@ -18,15 +18,15 @@ func TestKeysSorted(t *testing.T) {
 	mss["г"] = "г"
 	mss["Д"] = "Д"
 	mss["д"] = "д"
-	keys := Keys_MSS_Sorted(mss, false)
+	keys := Keys_Sorted(mss, false)
 	for i, k := range keys {
 		t.Errorf("position:%v key:%v\n", i, k)
 	}
-	keysR := Keys_MSS_Sorted(mss, true)
+	keysR := Keys_Sorted(mss, true)
 	for i, k := range keysR {
 		t.Errorf("position:%v key:%v\n", i, k)
 	}
-	keysUsed := KeysUsed(keys)
+	keysUsed := KeyUseMap(keys)
 	keysUsed["A"] = true
 	fmt.Println(keysUsed)
 }
