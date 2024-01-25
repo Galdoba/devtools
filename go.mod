@@ -8,6 +8,8 @@ require (
 	github.com/urfave/cli/v2 v2.27.1
 )
 
+require golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
+
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect

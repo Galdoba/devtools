@@ -133,3 +133,13 @@ func StdPath(name string, dirs ...string) string {
 	return path + name
 
 }
+
+func StdConfigDir(name string) string {
+	path, err := os.UserHomeDir()
+	if err != nil {
+		panic(err.Error())
+	}
+	sep := string(filepath.Separator)
+	path += sep
+	return path + ".config" + sep + name + sep
+}

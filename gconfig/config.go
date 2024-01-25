@@ -1,15 +1,16 @@
 package gconfig
 
 import (
-	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 
-	"github.com/pelletier/go-toml"
+	"github.com/Galdoba/devtools/gpath"
 	"gopkg.in/yaml.v3"
 )
 
 const (
-	TYPE_BOOL   = "bool"
+	TYPE_BOOL   = "BOOL"
 	TYPE_INT    = "INT"
 	TYPE_FLOAT  = "FLOAT"
 	TYPE_STRING = "STRING"
@@ -23,23 +24,38 @@ type Config interface {
 	Data() []byte
 }
 
-type config struct {
-	Program         string `json "ProgramaaaA"`
-	Tags            []string
-	loadOrder       []string
-	Location        string
-	BoolFields      map[string]bool
-	IntFields       map[string]int
-	FloatFiels      map[string]float64
-	StringsFields   map[string]string
-	SlBoolFields    map[string][]bool
-	SlIntFields     map[string][]int
-	SlFloatFiels    map[string][]float64
-	SlStringsFields map[string][]string
-	keys            map[string]bool
+/*
+#######################################################
+#  This is auto generated config file.                #
+#  Check formatting rules before manual edit.         #
+#  https://docs.fileformat.com/programming/yaml/      #
+#######################################################
 
-	MapStringsFields map[string]map[string]string
-	MapIntFields     map[string]map[string]int
+Program: mfline
+String Type Parameters:
+	default_scan_storage_directory: /home/galdoba/.ffstuff/data/mfline/
+	log_file(unimplemented): /home/galdoba/.ffstuff/logs/mfline.log
+Float Type Parameters:
+
+*/
+
+// config struct  
+type config struct {
+	Program          string                        `yaml:"Application Name,omitempty"`
+	Tags             []string                      `yaml:"Config tags,omitempty"`
+	Location         string                        `yaml:"Config location,omitempty"`
+	StringsFields    map[string]string             `yaml:"String Type Parameters,omitempty"`
+	IntFields        map[string]int                `yaml:"Integer Type Parameters,omitempty"`
+	FloatFiels       map[string]float64            `yaml:"Float Type Parameters,omitempty"`
+	BoolFields       map[string]bool               `yaml:"Boolean Type Parameters,omitempty"`
+	SlStringsFields  map[string][]string           `yaml:"List of Strings Type Parameters,omitempty"`
+	SlIntFields      map[string][]int              `yaml:"List of Integers Type Parameters,omitempty"`
+	SlFloatFiels     map[string][]float64          `yaml:"List of Floats Type Parameters,omitempty"`
+	SlBoolFields     map[string][]bool             `yaml:"List of Booleans Type Parameters,omitempty"`
+	MapStringsFields map[string]map[string]string  `yaml:"Dictionary of Strings Type Parameters,omitempty"`
+	MapIntFields     map[string]map[string]int     `yaml:"Dictionary of Integers Type Parameters,omitempty"`
+	MapFloatFields   map[string]map[string]float64 `yaml:"Dictionary of Floats Type Parameters,omitempty"`
+	MapBoolFields    map[string]map[string]bool    `yaml:"Dictionary of Booleans Type Parameters,omitempty"`
 }
 
 func newConfig(program string, tags ...string) *config {
@@ -48,68 +64,36 @@ func newConfig(program string, tags ...string) *config {
 	for _, t := range tags {
 		cfg.Tags = append(cfg.Tags, t)
 	}
+
 	cfg.BoolFields = make(map[string]bool)
 	cfg.IntFields = make(map[string]int)
 	cfg.FloatFiels = make(map[string]float64)
 	cfg.StringsFields = make(map[string]string)
+
 	cfg.SlBoolFields = make(map[string][]bool)
 	cfg.SlIntFields = make(map[string][]int)
 	cfg.SlFloatFiels = make(map[string][]float64)
 	cfg.SlStringsFields = make(map[string][]string)
-	// cfg.mapBoolFields = make(map[string]map[string]bool)
-	// cfg.mapIntFields = make(map[string]map[string]int)
-	// cfg.mapFloatFiels = make(map[string]map[string]float64)
+
 	cfg.MapStringsFields = make(map[string]map[string]string, 0)
 	cfg.MapIntFields = make(map[string]map[string]int, 0)
+	cfg.MapFloatFields = make(map[string]map[string]float64, 0)
+	cfg.MapIntFields = make(map[string]map[string]int, 0)
+
 	return &cfg
 }
 
+// fillTest method  
 func (cfg *config) fillTest() {
-	cfg.BoolFields[IS_CONCRETE+"bool1"] = true
-	cfg.BoolFields[IS_CONCRETE+"bool2"] = true
-	cfg.IntFields[IS_CONCRETE+"int1"] = 1
-	cfg.IntFields[IS_CONCRETE+"int2"] = 1
-	cfg.FloatFiels[IS_CONCRETE+"float1"] = 1.2
-	cfg.FloatFiels[IS_CONCRETE+"float2"] = 2.2
-	cfg.StringsFields[IS_CONCRETE+"str1_key"] = "str1_val"
-	cfg.StringsFields[IS_CONCRETE+"str2_key"] = "str2_val"
-
-	cfg.SlBoolFields[IS_SLICE+"bool1"] = []bool{true, true}
-	cfg.SlBoolFields[IS_SLICE+"bool2"] = []bool{true, true}
-	cfg.SlIntFields[IS_SLICE+"int1"] = []int{1, 2}
-	cfg.SlIntFields[IS_SLICE+"int2"] = []int{3, 4}
-	cfg.SlFloatFiels[IS_SLICE+"float1"] = []float64{1.5, 2.5}
-	cfg.SlFloatFiels[IS_SLICE+"float2"] = []float64{3.5, 4.5}
-	cfg.SlStringsFields[IS_SLICE+"str1_key"] = []string{"str1_val1", "str1_val2"}
-	cfg.SlStringsFields[IS_SLICE+"str2_key"] = []string{"str2_val1", "str2_val2"}
-	mapFiels1 := make(map[string]string)
-	mapFiels1["one"] = "one"
-	mapFiels1["two"] = "two"
-	mapFiels2 := make(map[string]string)
-	mapFiels2["two111"] = "two111"
-	mapFiels2["one111"] = "one111"
-
-	mapInt1 := make(map[string]int)
-	mapInt1["aaa"] = 1
-	mapInt1["bbb"] = 2
-
-	mapInt2 := make(map[string]int)
-	mapInt2["ccc"] = 3
-	mapInt2["ddd"] = 4
-
-	cfg.MapIntFields["intMap1"] = mapInt1
-	cfg.MapIntFields["intMap2"] = mapInt2
-
-	cfg.MapStringsFields["map1"] = mapFiels1
-	cfg.MapStringsFields["map2"] = mapFiels2
-
-	bt, err := json.MarshalIndent(cfg, "", "  ")
-	fmt.Println(err)
-	fmt.Println(string(bt))
-
-	bt2, err2 := toml.Marshal(cfg)
-	fmt.Println(err2)
-	fmt.Println(string(bt2))
+	cfg.StringsFields["log_file(unimplemented)"] = "/home/galdoba/.ffstuff/logs/mfline.log"
+	cfg.SetOptionString("scan_storage_directory", "/home/galdoba/.ffstuff/data/mfline/")
+	cfg.SetOptionFloat("test", 33.01)
+	cfg.SetOptionStringSlice("STR", []string{"aaa", "bbb", "ccc"})
+	adMap := make(map[string]string)
+	adMap["first"] = "add1"
+	adMap["sec"] = "add3"
+	adMap["3"] = "add3"
+	cfg.SetOptionStringMap("address", adMap)
 
 	bt3, err3 := yaml.Marshal(cfg)
 	fmt.Println(err3)
@@ -117,11 +101,88 @@ func (cfg *config) fillTest() {
 
 }
 
-/*
-Path = "c:\\path"
-kernels = 5
-time_limit = 5.5
+func (cfg *config) Save() error {
+	bt, err := yaml.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(strings.TrimSuffix(gpath.StdConfigDir(cfg.Program), "config.yaml"), 0777)
+	if err != nil {
+		return err
+	}
+	location := stdPath(cfg.Program)
+	f, err := os.OpenFile(location, os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(bt)
+	return err
+}
 
+func Load(program string) (*config, error) {
 
+	bt, err := os.ReadFile(stdPath(program))
+	if err != nil {
+		return nil, fmt.Errorf("can't load config: %v", err.Error())
+	}
+	cfg := newConfig(program)
+	cfg.SetOptionBool("testing", false)
+	err = yaml.Unmarshal(bt, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("can't load config: %v", err.Error())
+	}
+	return cfg, nil
+}
 
-*/
+func (cfg *config) SetOptionString(key, val string) {
+	cfg.StringsFields[key] = val
+}
+
+func (cfg *config) SetOptionInt(key string, val int) {
+	cfg.IntFields[key] = val
+}
+
+func (cfg *config) SetOptionFloat(key string, val float64) {
+	cfg.FloatFiels[key] = val
+}
+
+func (cfg *config) SetOptionBool(key string, val bool) {
+	cfg.BoolFields[key] = val
+}
+
+func (cfg *config) SetOptionStringSlice(key string, val []string) {
+	cfg.SlStringsFields[key] = val
+}
+
+func (cfg *config) SetOptionIntSlice(key string, val []int) {
+	cfg.SlIntFields[key] = val
+}
+
+func (cfg *config) SetOptionFloatSlice(key string, val []float64) {
+	cfg.SlFloatFiels[key] = val
+}
+
+func (cfg *config) SetOptionBoolSlice(key string, val []bool) {
+	cfg.SlBoolFields[key] = val
+}
+
+func (cfg *config) SetOptionStringMap(key string, val map[string]string) {
+	cfg.MapStringsFields[key] = val
+}
+
+func (cfg *config) SetOptionIntMap(key string, val map[string]int) {
+	cfg.MapIntFields[key] = val
+}
+
+func (cfg *config) SetOptionFloatMap(key string, val map[string]float64) {
+	cfg.MapFloatFields[key] = val
+}
+
+func (cfg *config) SetOptionBoolMap(key string, val map[string]bool) {
+	cfg.MapBoolFields[key] = val
+}
+
+func stdPath(program string) string {
+	path := gpath.StdConfigDir(program) + "config.yaml"
+	return path
+}
