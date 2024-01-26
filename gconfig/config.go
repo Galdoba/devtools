@@ -3,6 +3,7 @@ package gconfig
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Galdoba/devtools/gpath"
@@ -19,10 +20,10 @@ const (
 	IS_MAP      = "MAP"
 )
 
-type Config interface {
-	Path() string
-	Data() []byte
-}
+// type Config interface {
+// 	Path() string
+// 	Data() []byte
+// }
 
 /*
 #######################################################
@@ -40,149 +41,161 @@ Float Type Parameters:
 */
 
 // config struct  
-type config struct {
-	Program          string                        `yaml:"Application Name,omitempty"`
-	Tags             []string                      `yaml:"Config tags,omitempty"`
-	Location         string                        `yaml:"Config location,omitempty"`
-	StringsFields    map[string]string             `yaml:"String Type Parameters,omitempty"`
-	IntFields        map[string]int                `yaml:"Integer Type Parameters,omitempty"`
-	FloatFiels       map[string]float64            `yaml:"Float Type Parameters,omitempty"`
-	BoolFields       map[string]bool               `yaml:"Boolean Type Parameters,omitempty"`
-	SlStringsFields  map[string][]string           `yaml:"List of Strings Type Parameters,omitempty"`
-	SlIntFields      map[string][]int              `yaml:"List of Integers Type Parameters,omitempty"`
-	SlFloatFiels     map[string][]float64          `yaml:"List of Floats Type Parameters,omitempty"`
-	SlBoolFields     map[string][]bool             `yaml:"List of Booleans Type Parameters,omitempty"`
-	MapStringsFields map[string]map[string]string  `yaml:"Dictionary of Strings Type Parameters,omitempty"`
-	MapIntFields     map[string]map[string]int     `yaml:"Dictionary of Integers Type Parameters,omitempty"`
-	MapFloatFields   map[string]map[string]float64 `yaml:"Dictionary of Floats Type Parameters,omitempty"`
-	MapBoolFields    map[string]map[string]bool    `yaml:"Dictionary of Booleans Type Parameters,omitempty"`
+type Config struct {
+	program           string                       //`yaml:"Application Name,omitempty"`
+	Tags              []string                     `yaml:"Config tags,omitempty"`
+	location          string                       //`yaml:"Config location,omitempty"`
+	header            string                       `yaml:"#,omitempty"`
+	Option_STR        map[string]string            `yaml:"String Options,omitempty"`
+	Option_INT        map[string]int               `yaml:"Integer Options,omitempty"`
+	Option_FLOAT64    map[string]float64           `yaml:"Float Options,omitempty"`
+	Option_BOOL       map[string]bool              `yaml:"Boolean Options,omitempty"`
+	Option_LIST       map[string][]string          `yaml:"Lists,omitempty"`
+	Option_DICTIONARY map[string]map[string]string `yaml:"Dictionaries,omitempty"`
 }
 
-func newConfig(program string, tags ...string) *config {
-	cfg := config{}
-	cfg.Program = program
-	for _, t := range tags {
-		cfg.Tags = append(cfg.Tags, t)
+func NewConfig(program string, tags ...instruction) (*Config, error) {
+	if len(tags) == 0 {
+		return nil, fmt.Errorf("can't create config: at least one instruction must be set")
 	}
 
-	cfg.BoolFields = make(map[string]bool)
-	cfg.IntFields = make(map[string]int)
-	cfg.FloatFiels = make(map[string]float64)
-	cfg.StringsFields = make(map[string]string)
+	cfg := Config{}
+	cfg.program = program
+	loc := stdPath(program)
+	for _, t := range tags {
+		switch t.operation {
+		case toFile:
+			loc = t.value
+			cfg.Tags = append(cfg.Tags, "location: "+loc)
+		case defaultCase:
+			if len(tags) != 1 {
+				return nil, fmt.Errorf("can't create config: instruction 'Default' must be only instruction to exist")
+			}
+			cfg.header = header(cfg.program)
+		}
 
-	cfg.SlBoolFields = make(map[string][]bool)
-	cfg.SlIntFields = make(map[string][]int)
-	cfg.SlFloatFiels = make(map[string][]float64)
-	cfg.SlStringsFields = make(map[string][]string)
+	}
+	cfg.location = loc
+	cfg.Option_BOOL = make(map[string]bool)
+	cfg.Option_INT = make(map[string]int)
+	cfg.Option_FLOAT64 = make(map[string]float64)
+	cfg.Option_STR = make(map[string]string)
+	cfg.Option_LIST = make(map[string][]string)
+	cfg.Option_DICTIONARY = make(map[string]map[string]string, 0)
 
-	cfg.MapStringsFields = make(map[string]map[string]string, 0)
-	cfg.MapIntFields = make(map[string]map[string]int, 0)
-	cfg.MapFloatFields = make(map[string]map[string]float64, 0)
-	cfg.MapIntFields = make(map[string]map[string]int, 0)
-
-	return &cfg
+	return &cfg, nil
 }
 
-// fillTest method  
-func (cfg *config) fillTest() {
-	cfg.StringsFields["log_file(unimplemented)"] = "/home/galdoba/.ffstuff/logs/mfline.log"
-	cfg.SetOptionString("scan_storage_directory", "/home/galdoba/.ffstuff/data/mfline/")
-	cfg.SetOptionFloat("test", 33.01)
-	cfg.SetOptionStringSlice("STR", []string{"aaa", "bbb", "ccc"})
-	adMap := make(map[string]string)
-	adMap["first"] = "add1"
-	adMap["sec"] = "add3"
-	adMap["3"] = "add3"
-	cfg.SetOptionStringMap("address", adMap)
-
-	bt3, err3 := yaml.Marshal(cfg)
-	fmt.Println(err3)
-	fmt.Println(string(bt3))
-
-}
-
-func (cfg *config) Save() error {
+func (cfg *Config) Save(instructions ...instruction) error {
+	location := cfg.location
+	for _, inst := range instructions {
+		switch inst.operation {
+		case toFile:
+			location = inst.value
+			cfg.Tags = append(cfg.Tags, "location: "+location)
+		}
+	}
+	data := []byte(cfg.header)
 	bt, err := yaml.Marshal(cfg)
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(strings.TrimSuffix(gpath.StdConfigDir(cfg.Program), "config.yaml"), 0777)
+	dir := filepath.Dir(location)
+	if dir == "." {
+		return fmt.Errorf("can't define directory for %v", location)
+	}
+	err = os.MkdirAll(dir, 0777)
 	if err != nil {
 		return err
 	}
-	location := stdPath(cfg.Program)
 	f, err := os.OpenFile(location, os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return err
 	}
+	defer f.Close()
+	f.Truncate(0)
+	if cfg.header != "" {
+		_, err := f.WriteString(cfg.header)
+		if err != nil {
+			return fmt.Errorf("can't save file: write header: %v", err.Error())
+		}
+	}
+
+	data = append(data, bt...)
 	_, err = f.Write(bt)
 	return err
 }
 
-func Load(program string) (*config, error) {
-
-	bt, err := os.ReadFile(stdPath(program))
+func Load(program string, instructions ...instruction) (*Config, error) {
+	path := stdPath(program)
+	for _, inst := range instructions {
+		switch inst.operation {
+		case fromFile:
+			path = inst.value
+		}
+	}
+	bt, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("can't load config: %v", err.Error())
 	}
-	cfg := newConfig(program)
-	cfg.SetOptionBool("testing", false)
+	cfg, err := NewConfig(program, ToFile(path))
+	if err != nil {
+		return nil, fmt.Errorf("can't load config: %v", err.Error())
+	}
 	err = yaml.Unmarshal(bt, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("can't load config: %v", err.Error())
 	}
+	fmt.Println(cfg)
 	return cfg, nil
-}
-
-func (cfg *config) SetOptionString(key, val string) {
-	cfg.StringsFields[key] = val
-}
-
-func (cfg *config) SetOptionInt(key string, val int) {
-	cfg.IntFields[key] = val
-}
-
-func (cfg *config) SetOptionFloat(key string, val float64) {
-	cfg.FloatFiels[key] = val
-}
-
-func (cfg *config) SetOptionBool(key string, val bool) {
-	cfg.BoolFields[key] = val
-}
-
-func (cfg *config) SetOptionStringSlice(key string, val []string) {
-	cfg.SlStringsFields[key] = val
-}
-
-func (cfg *config) SetOptionIntSlice(key string, val []int) {
-	cfg.SlIntFields[key] = val
-}
-
-func (cfg *config) SetOptionFloatSlice(key string, val []float64) {
-	cfg.SlFloatFiels[key] = val
-}
-
-func (cfg *config) SetOptionBoolSlice(key string, val []bool) {
-	cfg.SlBoolFields[key] = val
-}
-
-func (cfg *config) SetOptionStringMap(key string, val map[string]string) {
-	cfg.MapStringsFields[key] = val
-}
-
-func (cfg *config) SetOptionIntMap(key string, val map[string]int) {
-	cfg.MapIntFields[key] = val
-}
-
-func (cfg *config) SetOptionFloatMap(key string, val map[string]float64) {
-	cfg.MapFloatFields[key] = val
-}
-
-func (cfg *config) SetOptionBoolMap(key string, val map[string]bool) {
-	cfg.MapBoolFields[key] = val
 }
 
 func stdPath(program string) string {
 	path := gpath.StdConfigDir(program) + "config.yaml"
 	return path
+}
+
+type instruction struct {
+	operation uint
+	value     string
+}
+
+const (
+	fromFile    uint = 100
+	toFile      uint = 101
+	defaultCase uint = 102
+)
+
+func FromFile(path string) instruction {
+	return instruction{
+		operation: fromFile,
+		value:     path,
+	}
+}
+
+func ToFile(path string) instruction {
+	return instruction{
+		operation: toFile,
+		value:     path,
+	}
+}
+
+func Default() instruction {
+	return instruction{
+		operation: defaultCase,
+	}
+}
+
+func header(program string) string {
+	return strings.Join([]string{
+		fmt.Sprintf("#This is autogenerated config for %v\n", program),
+	}, "\n")
+}
+
+func (cfg *Config) String() string {
+	data, err := os.ReadFile(cfg.location)
+	if err != nil {
+		return fmt.Sprintf("%v", err.Error())
+	}
+	return string(data)
 }
