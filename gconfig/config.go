@@ -146,7 +146,6 @@ func Load(program string, instructions ...instruction) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("can't load config: %v", err.Error())
 	}
-	fmt.Println(cfg)
 	return cfg, nil
 }
 
