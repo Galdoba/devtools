@@ -32,7 +32,7 @@ const (
 #  https://docs.fileformat.com/programming/yaml/      #
 #######################################################
 
-Program: mfline
+program: mfline
 String Type Parameters:
 	default_scan_storage_directory: /home/galdoba/.ffstuff/data/mfline/
 	log_file(unimplemented): /home/galdoba/.ffstuff/logs/mfline.log
@@ -42,7 +42,7 @@ Float Type Parameters:
 
 // config struct  
 type Config struct {
-	Program           string                       `yaml:"Application"`
+	program           string                       //`yaml:"Application"`
 	Tags              []string                     `yaml:"Config tags,omitempty"`
 	location          string                       //`yaml:"Config location,omitempty"`
 	header            string                       `yaml:"#,omitempty"`
@@ -64,23 +64,24 @@ func NewConfig(program string, tags ...instruction) (*Config, error) {
 	}
 
 	cfg := Config{}
-	cfg.Program = program
+	cfg.program = program
 	cfg.Tags = append(cfg.Tags, "app: "+program)
 	loc := stdPath(program)
 	for _, t := range tags {
 		switch t.operation {
 		case toFile:
 			loc = t.value
-			cfg.Tags = append(cfg.Tags, "location: "+loc)
+			//cfg.Tags = append(cfg.Tags, "location: "+loc)
 		case defaultCase:
 			if len(tags) != 1 {
 				return nil, fmt.Errorf("can't create config: instruction 'Default' must be only instruction to exist")
 			}
-			cfg.header = header(cfg.Program)
+			cfg.header = header(cfg.program)
 		}
 
 	}
 	cfg.location = loc
+	cfg.Tags = append(cfg.Tags, "location: "+loc)
 	cfg.Option_BOOL = make(map[string]bool)
 	cfg.Option_INT = make(map[string]int)
 	cfg.Option_FLOAT64 = make(map[string]float64)
@@ -196,7 +197,7 @@ func header(program string) string {
 		fmt.Sprintf("#  This is auto generated config file.                #"),
 		fmt.Sprintf("#  Check formatting rules before manual edit.         #"),
 		fmt.Sprintf("#  https://docs.fileformat.com/programming/yaml/      #"),
-		fmt.Sprintf("#######################################################"),
+		fmt.Sprintf("#######################################################\n"),
 	}, "\n")
 }
 
