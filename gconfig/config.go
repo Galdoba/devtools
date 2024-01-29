@@ -77,6 +77,7 @@ func NewConfig(program string, tags ...instruction) (*Config, error) {
 				return nil, fmt.Errorf("can't create config: instruction 'Default' must be only instruction to exist")
 			}
 			cfg.header = header(cfg.program)
+			os.MkdirAll(gpath.StdConfigDir(program), 0777)
 		}
 
 	}
