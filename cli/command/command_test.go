@@ -7,11 +7,15 @@ import (
 )
 
 func Test_Command(t *testing.T) {
+	input := `\\192.168.31.4\buffer\IN\_DONE\Stalnaya_hvatka--FILM--IronClaw_2K_prores422hq.mov`
 	tcmd, err := New(
-		CommandLineArguments("ffprobe -v verbose -f lavfi -i amovie=d:\\\\IN\\\\IN_2022-03-28\\\\geroi_zakalennye_severnoy_shirotoy_2015__hd_rus20.m4a,asetnsamples=48000,astats=metadata=1:reset=1 -show_entries frame=pkt_pts_time:frame_tags=lavfi.astats.Overall.RMS_level,lavfi.astats.1.RMS_level,lavfi.astats.2.RMS_level,lavfi.astats.3.RMS_level,lavfi.astats.4.RMS_level,lavfi.astats.5.RMS_level,lavfi.astats.6.RMS_level -of csv=p=0"),
+		CommandLineArguments(fmt.Sprintf("ffprobe -v verbose -f lavfi -i amovie=%v,asetnsamples=48000,astats=metadata=1:reset=1 -show_entries frame=pkt_pts_time:frame_tags=lavfi.astats.Overall.RMS_level,lavfi.astats.1.RMS_level,lavfi.astats.2.RMS_level,lavfi.astats.3.RMS_level,lavfi.astats.4.RMS_level,lavfi.astats.5.RMS_level,lavfi.astats.6.RMS_level -of csv=p=0", input)),
 		Set(TERMINAL_ON),
-		WriteToFile("d:\\IN\\IN_testInput\\log3.txt"),
+		WriteToFile(`\\192.168.31.4\buffer\IN\_DONE\log3.txt`),
+		AddBuffer("aaa"),
+		//\\192.168.31.4\buffer\IN\_DONE\
 	)
+	bf := tcmd.Buffer("aaa")
 	if err != nil {
 		t.Errorf("func New() error: %v", err.Error())
 	}
@@ -30,5 +34,8 @@ func Test_Command(t *testing.T) {
 
 	hn, err := os.Hostname()
 	fmt.Println("Host Name:", hn, err)
+	fmt.Println("///")
+	fmt.Println("BUF")
+	fmt.Println(bf.String())
 
 }
