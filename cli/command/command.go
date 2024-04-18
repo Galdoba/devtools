@@ -17,18 +17,20 @@ const (
 	BUFFER_OFF
 	FILE
 	STD_INPUT
+	CUSTOM_BUFFER
 )
 
 type terminalCommand struct {
-	programPath string
-	args        []string
-	term        bool
-	buffer      bool
-	filePaths   []string
-	writersOUT  []io.Writer
-	writersERR  []io.Writer
-	stOut       string
-	stErr       string
+	programPath   string
+	args          []string
+	term          bool
+	buffer        bool
+	filePaths     []string
+	writersOUT    []io.Writer
+	writersERR    []io.Writer
+	stOut         string
+	stErr         string
+	customBuffers map[string]*bytes.Buffer
 }
 
 type commandInstruction struct {
@@ -39,12 +41,14 @@ type commandInstruction struct {
 //New - создает и наполняет конструкт запускающийся в стандартном терминале
 func New(inst ...commandInstruction) (*terminalCommand, error) {
 	tc := terminalCommand{}
+	tc.customBuffers = make(map[string]*bytes.Buffer)
 	for _, in := range inst {
 		tc.AddInstruction(in)
 	}
 	if tc.programPath == "" {
 		return nil, fmt.Errorf("command line undefined")
 	}
+
 	return &tc, nil
 }
 
@@ -80,6 +84,10 @@ func (tc *terminalCommand) Run() error {
 		tc.writersOUT = append(tc.writersOUT, f)
 		tc.writersERR = append(tc.writersERR, f)
 	}
+	for _, bf := range tc.customBuffers {
+		tc.writersOUT = append(tc.writersOUT, bf)
+		tc.writersERR = append(tc.writersERR, bf)
+	}
 	//Setup writer(s)
 	cmd.Stdout = io.MultiWriter(tc.writersOUT...)
 	cmd.Stderr = io.MultiWriter(tc.writersERR...)
@@ -114,6 +122,11 @@ func WriteToFile(path string) commandInstruction {
 	return commandInstruction{FILE, path}
 }
 
+//WriteToFile - добавляется файл в который будет писаться output и error
+func AddBuffer(key string) commandInstruction {
+	return commandInstruction{CUSTOM_BUFFER, key}
+}
+
 //AddInstruction - добавляет в инструкции информацию о том что и как делать
 //там где инструкции противоречат друг другу приоритетной будет послеледняя
 func (tc *terminalCommand) AddInstruction(ti commandInstruction) {
@@ -135,6 +148,8 @@ func (tc *terminalCommand) AddInstruction(ti commandInstruction) {
 		if ti.arg != "" {
 			tc.filePaths = append(tc.filePaths, ti.arg)
 		}
+	case CUSTOM_BUFFER:
+		tc.customBuffers[ti.arg] = &bytes.Buffer{}
 	}
 }
 
@@ -146,6 +161,13 @@ func (tc *terminalCommand) StdOut() string {
 //StdErr - возвращает стандартную ошибку
 func (tc *terminalCommand) StdErr() string {
 	return tc.stErr
+}
+
+func (tc *terminalCommand) Buffer(key string) *bytes.Buffer {
+	if b, ok := tc.customBuffers[key]; ok {
+		return b
+	}
+	return nil
 }
 
 func RunSilent(cmmnd string, args ...string) (string, error) {
