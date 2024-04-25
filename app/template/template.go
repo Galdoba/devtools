@@ -26,16 +26,16 @@ func main() {
 	app.Name = programName
 	app.Usage = "what do i do?"
 	app.Flags = []cli.Flag{}
-	//дн мювюкю деиярбхъ
+	//О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫
 	app.Before = func(c *cli.Context) error {
 		return nil
 	}
 	app.Commands = []*cli.Command{
 
-		cmd.NewCommand(),
+		// cmd.NewCommand(),
 	}
 
-	//он нйнмвюмхч деиярбхъ
+	//О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫
 	app.After = func(c *cli.Context) error {
 		return nil
 	}
