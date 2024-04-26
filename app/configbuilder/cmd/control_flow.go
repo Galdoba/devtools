@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/charmbracelet/huh"
 )
@@ -36,6 +37,9 @@ func userInput(q string, defaults ...string) string {
 }
 
 func userSelect(question string, options ...string) string {
+	if len(options) == 1 {
+		return options[0]
+	}
 	var picked int
 	selectComponent := huh.NewSelect[int]()
 	selectComponent = selectComponent.Title(question)
@@ -50,7 +54,11 @@ func userSelect(question string, options ...string) string {
 	form := huh.NewForm(huh.NewGroup(selectComponent))
 	err := form.Run()
 	if err != nil {
-		panic(err.Error())
+		if err.Error() == "user aborted" {
+			return "DONE"
+		}
+		fmt.Println(err.Error())
+		os.Exit(2)
 	}
 	return options[picked]
 }

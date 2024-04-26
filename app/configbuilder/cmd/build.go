@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -8,11 +9,18 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const (
+	flag_Overwrite    = "overwrite"
+	flag_Delete_model = "delete_model"
+)
+
 func BuildSource() *cli.Command {
 	cmnd := &cli.Command{
-		Name:    "build",
-		Aliases: []string{},
-		Usage:   "build go source file from available model",
+		Name:        "build",
+		Aliases:     []string{},
+		Usage:       "Generate source file",
+		UsageText:   "configbuilder build [options]",
+		Description: fmt.Sprintf("build %v file from available model", configbuilder.SOURCE_FILE),
 		Action: func(c *cli.Context) error {
 			if !modelFileDetected() {
 				return fmt.Errorf("%v not found\nrun 'configbuilder -h' for help", configbuilder.MODEL_FILE)
@@ -25,10 +33,32 @@ func BuildSource() *cli.Command {
 			if err != nil {
 				return err
 			}
-			return buildSources(cb)
+			if sourceFileDetected() && !c.Bool(flag_Overwrite) {
+				return fmt.Errorf("can't build source file: flag 'overwrite' is false")
+			}
+			if err := buildSources(cb); err != nil {
+				return fmt.Errorf("can't build source file: %v", err.Error())
+			}
+			if c.Bool(flag_Delete_model) {
+				return removeModel()
+			}
+			return nil
 		},
 		Flags: []cli.Flag{
-			// &cli.StringFlag{},
+			&cli.BoolFlag{
+				Name:        flag_Overwrite,
+				Category:    "",
+				DefaultText: "",
+				FilePath:    "",
+				Usage:       fmt.Sprintf("allow overwrite %v", configbuilder.SOURCE_FILE),
+				Aliases:     []string{"o"},
+			},
+			&cli.BoolFlag{
+				Name: flag_Delete_model,
+
+				Usage:   fmt.Sprintf("delete %v after building %v", configbuilder.MODEL_FILE, configbuilder.SOURCE_FILE),
+				Aliases: []string{"d"},
+			},
 		},
 	}
 	return cmnd
@@ -58,4 +88,16 @@ func buildSources(cb configbuilder.Builder) error {
 		return fmt.Errorf("can't write file: %v", err.Error())
 	}
 	return nil
+}
+
+func sourceFileDetected() bool {
+	if f, err := os.Stat(configbuilder.SOURCE_FILE); err == nil {
+		if f.IsDir() {
+			return false
+		}
+		return true
+	} else if errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	return false
 }

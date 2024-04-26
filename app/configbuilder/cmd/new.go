@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Galdoba/devtools/app/configbuilder/config"
 	"github.com/Galdoba/devtools/app/configbuilder/internal/configbuilder"
 	"github.com/Galdoba/devtools/app/configbuilder/internal/model"
 	"github.com/Galdoba/devtools/app/configbuilder/internal/tui"
@@ -25,22 +26,30 @@ const (
 	omit          = "OmitEmpty"
 	comment       = "Comment"
 	defaultVal    = "Default Value"
+	flag_Testmode = "testmode"
 )
 
 var modelLanguage string
 
 func NewModel() *cli.Command {
 	cmnd := &cli.Command{
-		Name:    "new",
-		Aliases: []string{},
-		Usage:   "create config model",
+		Name:      "new",
+		Aliases:   []string{},
+		Usage:     "Create new config model",
+		UsageText: "configbuilder new [command options]",
 		Description: strings.Join([]string{
-			"interactive loop creates model structure, which will be encoded and saved as model.csv in runtime directory",
+			"Interactive loop creates model structure, which will be encoded and saved as model.csv in runtime directory",
 			"*this command is expeced to be run in directory with name: '.../config/'",
 		}, "\n"),
 		Action: func(c *cli.Context) error {
-			if modelFileDetected() {
-				return fmt.Errorf("can't create new model: %v exist\nsuggestion: run 'configbuilder edit' to change model or 'configbuilder delete' to delete it", configbuilder.MODEL_FILE)
+			cfg, err := config.Load()
+			if err != nil {
+				return fmt.Errorf("can't create new model: %v", err.Error())
+			}
+			if modelFileDetected() && !c.Bool(flag_Overwrite) {
+				if !c.Bool(flag_Testmode) {
+					return fmt.Errorf("%v exist: set flag 'overwrite' to 'true' or run 'configbuilder edit' instead", configbuilder.MODEL_FILE)
+				}
 			}
 			workingDir, err := filepath.Abs(".")
 			if err != nil {
@@ -51,8 +60,12 @@ func NewModel() *cli.Command {
 					return err
 				}
 			}
-			modelLanguage = userSelect("Choose encoding for configfile:", "yaml", "toml", "json")
 
+			modelLanguage = userSelect("Choose encoding for configfile:", cfg.GetSupportedEncodings()...)
+
+			if modelLanguage == "DONE" {
+				return fmt.Errorf("can't create new model: encoding was not selected")
+			}
 			cb := configbuilder.New(modelLanguage)
 			err = cb.SetSourceDir(workingDir)
 			if err != nil {
@@ -61,14 +74,20 @@ func NewModel() *cli.Command {
 			if err := editModel(cb); err != nil {
 				return err
 			}
-			if !c.Bool("testmode") {
+			if !c.Bool(flag_Testmode) {
 				if err = savetoFile(cb.Model()); err != nil {
 					return fmt.Errorf("can't save model: %v", err.Error())
 				}
 			}
 			return nil
 		},
-		Flags: []cli.Flag{},
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "overwrite",
+				Usage:   "allow overwrite of existing model's file",
+				Aliases: []string{"o"},
+			},
+		},
 	}
 
 	return cmnd

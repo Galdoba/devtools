@@ -11,24 +11,17 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-/*
-run
-
-
-*/
-
-var configPath string
-
 const (
 	programName = "configbuilder"
 )
 
 func main() {
 	app := cli.NewApp()
-	app.Version = "v 0.1.0"
+	app.Version = "v 0.2.0"
 	app.Name = programName
-	app.Usage = "fast build config file for go applications"
-	// app.UsageText = "configbuilder command"
+	app.Usage = "Fast generation of config source file for go applications"
+	app.Description = "configbuilder manage interactive loop for creating/editing config model and generates source code for\n" +
+		"ready to use config file encoded with yaml, json or toml markup languages"
 	app.Flags = []cli.Flag{
 		&cli.BoolFlag{
 			Name:    "testmode",
@@ -65,7 +58,6 @@ func main() {
 		return nil
 	}
 	args := os.Args
-	fmt.Println("Main:")
 	if err := app.Run(args); err != nil {
 		errOut := fmt.Sprintf("%v error: %v", programName, err.Error())
 		println(errOut)

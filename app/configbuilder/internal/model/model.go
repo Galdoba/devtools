@@ -34,6 +34,7 @@ const (
 
 type Model struct {
 	Fields   []*Field
+	selfData *Field
 	rowLen   []int
 	language string
 }

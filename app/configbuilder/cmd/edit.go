@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/Galdoba/devtools/app/configbuilder/internal/configbuilder"
 	"github.com/Galdoba/devtools/app/configbuilder/internal/model"
@@ -15,7 +16,11 @@ func EditModel() *cli.Command {
 	cmnd := &cli.Command{
 		Name:    "edit",
 		Aliases: []string{},
-		Usage:   "edit config model",
+		Description: fmt.Sprintf(strings.Join([]string{
+			fmt.Sprintf("Interactive loop for editing model structure, which will be encoded and saved as %v in runtime directory", configbuilder.MODEL_FILE),
+		}, "\n")),
+		Usage:     "Edit config model",
+		UsageText: "configbuilder edit [options]",
 		Action: func(c *cli.Context) error {
 			if !modelFileDetected() {
 				return fmt.Errorf("%v not found\nrun 'configbuilder -h' for help", configbuilder.MODEL_FILE)
@@ -106,13 +111,19 @@ func editFieldAction(cb configbuilder.Builder) error {
 		case comment:
 			f.WithComment(userInput("enter Field Comment:", f.Comment))
 		case defaultVal:
+			comp, _, _ := model.DataTypeSegments(f.DataType)
+			key, val := "", ""
 			switch userSelect(fmt.Sprintf("Editing %v\nDefault values actions:", f.SourceName), "add", "edit", "delete") {
 			case "add":
-				key := "default"
-				if userConfirm("Does value have a key?") {
+				switch comp {
+				case model.DataComposition_PRIMITIVE:
+					key = "default"
+				case model.DataComposition_SLICE:
+					key = fmt.Sprintf("%v", len(f.DefaulValDictionary))
+				case model.DataComposition_MAP:
 					key = userInput("enter key for value:")
 				}
-				val := userInput(fmt.Sprintf("enter %v value:", key))
+				val = userInput(fmt.Sprintf("enter %v value:", key))
 				f.WithValue(key, val)
 			case "edit":
 				keys := []string{}
@@ -120,8 +131,12 @@ func editFieldAction(cb configbuilder.Builder) error {
 					keys = append(keys, k)
 				}
 				sort.Strings(keys)
-				key := userSelect(fmt.Sprintf("Editing %v\nselect key:", f.SourceName), keys...)
-				val := userInput(fmt.Sprintf("Editing %v\nenter new value:", f.SourceName), f.DefaulValDictionary[key])
+				key := userSelect(fmt.Sprintf("Editing %v\nselect key to edit value:", f.SourceName), keys...)
+				switch comp {
+				case model.DataComposition_PRIMITIVE:
+					key = "default"
+				}
+				val = userInput(fmt.Sprintf("enter %v value:", key), f.DefaulValDictionary[key])
 				f.WithValue(key, val)
 			case "delete":
 				keys := []string{}
@@ -129,8 +144,17 @@ func editFieldAction(cb configbuilder.Builder) error {
 					keys = append(keys, k)
 				}
 				sort.Strings(keys)
-				key := userSelect(fmt.Sprintf("Editing %v\nselect key:", f.SourceName), keys...)
+				key := userSelect(fmt.Sprintf("Editing %v\nselect key to delete value:", f.SourceName), keys...)
 				f.DeleteValue(key)
+				if comp == model.DataComposition_SLICE {
+					for i := 0; i < len(f.DefaulValDictionary); i++ {
+						if _, ok := f.DefaulValDictionary[fmt.Sprintf("%v", i)]; ok {
+							continue
+						}
+						f.DefaulValDictionary[fmt.Sprintf("%v", i)] = f.DefaulValDictionary[fmt.Sprintf("%v", i+1)]
+						delete(f.DefaulValDictionary, fmt.Sprintf("%v", i+1))
+					}
+				}
 
 			}
 		case "DONE":

@@ -5,10 +5,12 @@ import (
 	"strings"
 
 	"github.com/Galdoba/devtools/app/configbuilder/internal/model"
+	"github.com/fatih/color"
 )
 
 func Status(m *model.Model) string {
-	stat := "Current Model: " + fmt.Sprintf("%v fields\n", len(m.Fields))
+	stat := "Model: " + fmt.Sprintf("contains %v fields\n", len(m.Fields))
+	stat += "Encoding: " + fmt.Sprintf("%v\n", m.Language())
 	report := []string{}
 	for _, fld := range m.Fields {
 		// stat += fld.String() + "\n"
@@ -18,24 +20,25 @@ func Status(m *model.Model) string {
 	for _, r := range report {
 		stat += r + "\n"
 	}
-	stat += "Error: " + modelErrorText(m)
+
+	stat += "Model Validation: " + modelErrorText(m)
 	return stat
 }
 
 func modelErrorText(m *model.Model) string {
 	for i, f := range m.Fields {
 		if err := f.Validate(); err != nil {
-			return fmt.Sprintf("field %v: %v", i+1, err.Error())
+			return color.HiYellowString(fmt.Sprintf("field %v: %v", i+1, err.Error()))
 		}
 	}
-	return "none"
+	return color.GreenString("ok")
 }
 
 func formatFieldReport(sl []string) []string {
 	lens := []int{0, 0, 0}
 	for _, s := range sl {
 		data := strings.Fields(s)
-		for i := 0; i < 2; i++ {
+		for i := 0; i <= 2; i++ {
 			lens[i] = max(lens[i], len(strings.Split(data[i], "")))
 		}
 	}
@@ -50,12 +53,16 @@ func formatFieldReport(sl []string) []string {
 		for len(strings.Split(word2, "")) < lens[1] {
 			word2 += " "
 		}
-		// word3 := data[2]
-		// for len(strings.Split(word3, "")) < lens[2] {
-		// 	word3 += " "
-		// }
+		rest := strings.Join(data[2:], " ")
+		encodingText, other := chopHead(rest, "//")
+		for len(encodingText) < (lens[2] + 26) {
+			encodingText += " "
+		}
+		encodingText = color.YellowString(encodingText)
+		comment, defaults := chopHead(other, " [")
+		comment = color.GreenString(comment)
 
-		out = append(out, word1+" "+word2+" "+strings.Join(data[2:], " "))
+		out = append(out, word1+"  "+color.HiCyanString(word2)+"  "+encodingText+comment+defaults)
 	}
 	outF := []string{}
 	if len(out) > 0 {
@@ -64,6 +71,20 @@ func formatFieldReport(sl []string) []string {
 		outF = append(outF, "=============================================")
 	}
 	return outF
+}
+
+func chopHead(str, pref string) (string, string) {
+	letters := strings.Split(str, "")
+	head := ""
+	for i, l := range letters {
+		body := strings.Join(letters, "")
+		if strings.HasPrefix(body[i:], pref) {
+			break
+		}
+		head += l
+	}
+	rest := strings.TrimPrefix(str, head)
+	return head, rest
 }
 
 func max(a, b int) int {
