@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/Galdoba/devtools/csvp"
 )
 
 const (
@@ -33,9 +35,8 @@ const (
 )
 
 type Model struct {
-	Fields   []*Field
-	selfData *Field
-	rowLen   []int
+	Fields []*Field
+	//rowLen   []int
 	language string
 }
 
@@ -106,7 +107,7 @@ func (f *Field) WithComment(comment string) *Field {
 	return f
 }
 
-func (f *Field) WithOmitempty() *Field {
+func (f *Field) ToggleOmitempty() *Field {
 	f.OmitEmpty = true
 	return f
 }
@@ -201,58 +202,58 @@ func TypeValid(tp string) bool {
 	return false
 }
 
-func (m *Model) String() string {
-	raw := [][]string{}
-	lenGlob := 0
-	for _, f := range m.Fields {
-		rawfld := []string{f.SourceName, f.DataType, f.Designation, fmt.Sprintf("%v", f.OmitEmpty), f.Comment}
-		for _, k := range keysFrom(f.DefaulValDictionary) {
-			rawfld = append(rawfld, k)
-			rawfld = append(rawfld, f.DefaulValDictionary[k])
-		}
-		raw = append(raw, rawfld)
-		if lenGlob < len(rawfld) {
-			lenGlob = len(rawfld)
-		}
-	}
-	for i, rawOne := range raw {
-		for len(rawOne) > lenGlob {
-			rawOne = append(rawOne, " ")
-		}
-		for rn, cell := range rawOne {
-			for len(m.rowLen) <= rn {
-				m.rowLen = append(m.rowLen, 0)
-			}
-			localLettersNum := m.rowLen[rn]
-			if localLettersNum < len(strings.Split(cell, "")) {
-				m.rowLen[rn] = len(strings.Split(cell, ""))
-			}
-		}
-		raw[i] = rawOne
-	}
-	for i, rawOne := range raw {
-		for len(rawOne) < lenGlob {
-			rawOne = append(rawOne, " ")
-		}
-		for rn, cell := range rawOne {
-			for len(strings.Split(cell, "")) < m.rowLen[rn] {
-				cell += " "
-			}
-			rawOne[rn] = cell
-		}
-		raw[i] = rawOne
-	}
-	lined := []string{}
-	for _, line := range raw {
-		lineF := strings.Join(line, `","`)
-		lineF = `"` + lineF + `"`
-		lined = append(lined, lineF)
+// func (m *Model) String() string {
+// 	raw := [][]string{}
+// 	lenGlob := 0
+// 	for _, f := range m.Fields {
+// 		rawfld := []string{f.SourceName, f.DataType, f.Designation, fmt.Sprintf("%v", f.OmitEmpty), f.Comment}
+// 		for _, k := range keysFrom(f.DefaulValDictionary) {
+// 			rawfld = append(rawfld, k)
+// 			rawfld = append(rawfld, f.DefaulValDictionary[k])
+// 		}
+// 		raw = append(raw, rawfld)
+// 		if lenGlob < len(rawfld) {
+// 			lenGlob = len(rawfld)
+// 		}
+// 	}
+// 	for i, rawOne := range raw {
+// 		for len(rawOne) > lenGlob {
+// 			rawOne = append(rawOne, " ")
+// 		}
+// 		for rn, cell := range rawOne {
+// 			for len(m.rowLen) <= rn {
+// 				m.rowLen = append(m.rowLen, 0)
+// 			}
+// 			localLettersNum := m.rowLen[rn]
+// 			if localLettersNum < len(strings.Split(cell, "")) {
+// 				m.rowLen[rn] = len(strings.Split(cell, ""))
+// 			}
+// 		}
+// 		raw[i] = rawOne
+// 	}
+// 	for i, rawOne := range raw {
+// 		for len(rawOne) < lenGlob {
+// 			rawOne = append(rawOne, " ")
+// 		}
+// 		for rn, cell := range rawOne {
+// 			for len(strings.Split(cell, "")) < m.rowLen[rn] {
+// 				cell += " "
+// 			}
+// 			rawOne[rn] = cell
+// 		}
+// 		raw[i] = rawOne
+// 	}
+// 	lined := []string{}
+// 	for _, line := range raw {
+// 		lineF := strings.Join(line, `","`)
+// 		lineF = `"` + lineF + `"`
+// 		lined = append(lined, lineF)
 
-	}
-	lined = append(lined, fmt.Sprintf(`"encoding","%v",""`, m.language))
-	str := strings.Join(lined, "\n")
-	return str
-}
+// 	}
+// 	lined = append(lined, fmt.Sprintf(`"encoding","%v",""`, m.language))
+// 	str := strings.Join(lined, "\n")
+// 	return str
+// }
 
 func keysFrom(m map[string]string) []string {
 	keys := []string{}
@@ -263,58 +264,137 @@ func keysFrom(m map[string]string) []string {
 	return keys
 }
 
-func FromString(s string) (*Model, error) {
-	lines := strings.Split(s, "\n")
-	language := strings.Split(lines[len(lines)-1], `","`)[1]
-	m := NewModel(language)
-	for i, line := range lines {
-		if !strings.HasPrefix(line, `"`) || !strings.HasSuffix(line, `"`) {
-			return nil, fmt.Errorf("line %v does not belong to model", i)
-		}
-		line = strings.TrimPrefix(line, `"`)
-		line = strings.TrimSuffix(line, `"`)
-		cells := strings.Split(line, `","`)
-		if i == len(lines)-1 {
-			m.language = strings.TrimSpace(cells[1])
+// func FromString0(s string) (*Model, error) {
+// 	lines := strings.Split(s, "\n")
+// 	language := strings.Split(lines[len(lines)-1], `","`)[1]
+// 	m := NewModel(language)
+// 	for i, line := range lines {
+// 		if !strings.HasPrefix(line, `"`) || !strings.HasSuffix(line, `"`) {
+// 			return nil, fmt.Errorf("line %v does not belong to model", i)
+// 		}
+// 		line = strings.TrimPrefix(line, `"`)
+// 		line = strings.TrimSuffix(line, `"`)
+// 		cells := strings.Split(line, `","`)
+// 		if i == len(lines)-1 {
+// 			m.language = strings.TrimSpace(cells[1])
 
+// 			continue
+// 		}
+
+// 		// m.Fields = append(m.Fields, NewField(strings.TrimSpace(cells[0]), strings.TrimSpace(cells[1]), strings.TrimSpace(cells[2])))
+// 		m.Fields = append(m.Fields, NewField(language))
+// 		// if len(cells) > 5 {
+// 		// 	if len(cells)%2 == 0 {
+// 		// 		return nil, fmt.Errorf("no dictionary value in line %v", i)
+// 		// 	}
+// 		// 	m.Fields[i] = m.Fields[i].WithDictionary()
+// 		// }
+// 		for n, cell := range cells {
+// 			cell = strings.TrimSpace(cell)
+// 			switch n {
+// 			case 0:
+// 				m.Fields[i] = m.Fields[i].WithSource(cell)
+// 			case 1:
+// 				m.Fields[i] = m.Fields[i].WithDataType(cell)
+// 			case 2:
+// 				m.Fields[i] = m.Fields[i].WithDesignation(cell)
+// 			case 3:
+// 				om, err := strconv.ParseBool(cell)
+// 				if err != nil {
+// 					return nil, fmt.Errorf("can't parse cell '%v' (line %v, row %v)", cell, i, n)
+// 				}
+// 				m.Fields[i] = m.Fields[i].WithOmitEmpty(om)
+// 			case 4:
+// 				m.Fields[i].Comment = cell
+// 			default:
+// 				if n%2 == 1 {
+// 					continue
+// 				}
+// 				key := strings.TrimSpace(cells[n-1])
+// 				m.Fields[i] = m.Fields[i].WithValue(key, cell)
+// 			}
+// 		}
+// 	}
+// 	return m, nil
+// }
+
+func FromString(s string) (*Model, error) {
+	cntr, err := csvp.FromString(s)
+	if err != nil {
+		return nil, fmt.Errorf("can't parse string: %v")
+	}
+	rows := len(cntr.Entries())
+	if rows < 2 {
+		return nil, fmt.Errorf("need atleast 2 rows to construct a model")
+	}
+	cols := len(cntr.Entries()[0].Fields())
+	if cols < 3 {
+		return nil, fmt.Errorf("need atleast 3 columns to construct a model")
+	}
+	lang := cntr.GetFieldValue(len(cntr.Entries())-1, 1)
+	m := NewModel(lang)
+
+	for row, entr := range cntr.Entries() {
+		if row == len(cntr.Entries())-1 {
 			continue
 		}
-
-		// m.Fields = append(m.Fields, NewField(strings.TrimSpace(cells[0]), strings.TrimSpace(cells[1]), strings.TrimSpace(cells[2])))
-		m.Fields = append(m.Fields, NewField(language))
-		// if len(cells) > 5 {
-		// 	if len(cells)%2 == 0 {
-		// 		return nil, fmt.Errorf("no dictionary value in line %v", i)
-		// 	}
-		// 	m.Fields[i] = m.Fields[i].WithDictionary()
-		// }
-		for n, cell := range cells {
-			cell = strings.TrimSpace(cell)
-			switch n {
+		modelField := NewField(lang)
+		expectValue := false
+		for col, entryField := range entr.Fields() {
+			switch col {
 			case 0:
-				m.Fields[i] = m.Fields[i].WithSource(cell)
+				modelField.WithSource(entryField)
 			case 1:
-				m.Fields[i] = m.Fields[i].WithDataType(cell)
+				modelField.WithDataType(entryField)
 			case 2:
-				m.Fields[i] = m.Fields[i].WithDesignation(cell)
+				modelField.WithDesignation(entryField)
 			case 3:
-				om, err := strconv.ParseBool(cell)
+				oe, err := strconv.ParseBool(entryField)
 				if err != nil {
-					return nil, fmt.Errorf("can't parse cell '%v' (line %v, row %v)", cell, i, n)
+					return nil, fmt.Errorf("can't parse boolean from value (row: %v col: %v val: '%v')", row, col, entryField)
 				}
-				m.Fields[i] = m.Fields[i].WithOmitEmpty(om)
+				modelField.WithOmitEmpty(oe)
 			case 4:
-				m.Fields[i].Comment = cell
+				modelField.WithComment(entryField)
 			default:
-				if n%2 == 1 {
+				if col%2 == 1 {
+					expectValue = true
 					continue
 				}
-				key := strings.TrimSpace(cells[n-1])
-				m.Fields[i] = m.Fields[i].WithValue(key, cell)
+				key := strings.TrimSpace(cntr.GetFieldValue(row, col-1))
+				modelField.WithValue(key, entryField)
+				expectValue = false
 			}
+
 		}
+		if expectValue {
+			return nil, fmt.Errorf("have key column, but no value column")
+		}
+		m.Fields = append(m.Fields, modelField)
 	}
 	return m, nil
+}
+
+func (m *Model) String() string {
+	c := csvp.NewContainer()
+	for _, fld := range m.Fields {
+		data := []string{}
+		data = append(data, fld.SourceName)
+		data = append(data, fld.DataType)
+		data = append(data, fld.Designation)
+		data = append(data, fmt.Sprintf("%v", fld.OmitEmpty))
+		data = append(data, fld.Comment)
+		keys := keysFrom(fld.DefaulValDictionary)
+		for _, k := range keys {
+			data = append(data, k)
+			data = append(data, fld.DefaulValDictionary[k])
+		}
+		e := csvp.NewEntry(data...)
+		c.AppendEntry(e)
+
+	}
+	c.AppendEntry(csvp.NewEntry("encoding", m.language))
+	return c.String()
 }
 
 func (m *Model) Language() string {
