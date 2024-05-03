@@ -35,13 +35,29 @@ func modelErrorText(m *model.Model) string {
 }
 
 func formatFieldReport(sl []string) []string {
-	lens := []int{0, 0, 0}
+	lens := []int{0, 0, 0, 0}
 	for _, s := range sl {
 		data := strings.Fields(s)
-		for i := 0; i <= 2; i++ {
-			lens[i] = max(lens[i], len(strings.Split(data[i], "")))
+
+		for i := 0; i <= 3; i++ {
+			val := ""
+			switch i {
+			case 0, 1:
+				val = data[i]
+			case 2:
+				for _, v := range data[2:] {
+					if strings.Contains(v, "//") {
+						break
+					}
+					val += v + " "
+				}
+
+			}
+			lens[i] = max(lens[i], len(strings.Split(val, "")))
+
 		}
 	}
+
 	out := []string{}
 	for _, s := range sl {
 		data := strings.Fields(s)
@@ -55,14 +71,19 @@ func formatFieldReport(sl []string) []string {
 		}
 		rest := strings.Join(data[2:], " ")
 		encodingText, other := chopHead(rest, "//")
-		for len(encodingText) < (lens[2] + 26) {
+		for len(encodingText) < (lens[2] + 2) {
 			encodingText += " "
 		}
 		encodingText = color.YellowString(encodingText)
 		comment, defaults := chopHead(other, " [")
-		comment = color.GreenString(comment)
+		if defaults == "[ : ]" {
+			defaults = ""
+		}
 
-		out = append(out, word1+"  "+color.HiCyanString(word2)+"  "+encodingText+comment+defaults)
+		comment = color.GreenString(comment)
+		str := word1 + "  " + color.HiCyanString(word2) + "  " + encodingText + comment + defaults
+
+		out = append(out, str)
 	}
 	outF := []string{}
 	if len(out) > 0 {

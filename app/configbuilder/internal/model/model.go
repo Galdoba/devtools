@@ -32,6 +32,10 @@ const (
 	DateType_uintptr          = "uintptr"
 	DateType_byte             = "byte"
 	DateType_rune             = "rune"
+	EncodingYAML              = "yaml"
+	EncodingTOML              = "toml"
+	EncodingJSON              = "json"
+	EncodingXML               = "xml"
 )
 
 type Model struct {
@@ -115,6 +119,9 @@ func (f *Field) ToggleOmitempty() *Field {
 func (f *Field) WithValue(key, val string) *Field {
 	if f.DefaulValDictionary == nil {
 		f.DefaulValDictionary = make(map[string]string)
+	}
+	if strings.TrimSpace(key) == strings.TrimSpace(val) && strings.TrimSpace(key) == "" {
+		return f
 	}
 	f.DefaulValDictionary[key] = val
 	return f
@@ -372,6 +379,111 @@ func FromString(s string) (*Model, error) {
 		}
 		m.Fields = append(m.Fields, modelField)
 	}
+	return m, nil
+}
+
+/*
+// config struct  
+type Config struct {
+	AppName           string   `yaml:"App Name                               ,omitempty"`
+	Location          string   `yaml:"Location                               ,omitempty"`
+	StorageDir        string   `yaml:"Scan Storage Directory                 ,omitempty"`
+	WriteLogs         bool     `yaml:"Write Logs                             ,omitempty"`
+	LogFile           string   `yaml:"Log File                               ,omitempty"`
+	OldScan           float64  `yaml:"Old Scan Age (hours)                   ,omitempty"`
+	AutoDeleteOld     bool     `yaml:"Delete Old Scans                       ,omitempty"`
+	AutoRenameTracked bool     `yaml:"Change storage data if Tracked renamed ,omitempty"`
+	AutoScan          bool     `yaml:"Scan All Files in Tracked Directories  ,omitempty"`
+	RescanIfErr       bool     `yaml:"Repeat Scans if Error is met           ,omitempty"`
+	TrackDirs         []string `yaml:"Track Directories                      ,omitempty"`
+	header            string
+}
+
+*/
+
+func FromSource(s string) (*Model, error) {
+	validLines := make(map[int]string)
+	track := false
+	last := 0
+	for i, line := range strings.Split(s, "\n") {
+		switch line {
+		case "type configuration struct {":
+			track = true
+			continue
+		case "}":
+			track = false
+			continue
+		default:
+			if !track {
+				continue
+			}
+			validLines[i] = line
+			last = i
+		}
+	}
+	m := NewModel("undefined")
+	lang := "???"
+	for i := 0; i <= last; i++ {
+		if _, ok := validLines[i]; !ok {
+			continue
+		}
+		data := strings.Split(validLines[i], "`")
+		fld := NewField("undefined")
+		fld.DefaulValDictionary = make(map[string]string)
+		for j, part := range data {
+			switch j {
+			case 0:
+				structData := strings.Fields(part)
+				if len(structData) != 2 {
+					return nil, fmt.Errorf("expect 2 struct data fields, have %v %v", len(structData), structData)
+				}
+				fld.SourceName = strings.TrimSpace(structData[0])
+				fld.DataType = strings.TrimSpace(structData[1])
+			case 1:
+				for _, encodingLang := range []string{EncodingJSON, EncodingTOML, EncodingXML, EncodingYAML} {
+					if !strings.Contains(part, encodingLang+":") {
+						continue
+					}
+					fld.language = encodingLang
+					lang = encodingLang
+					part = strings.TrimPrefix(part, encodingLang+":")
+				}
+				part = strings.TrimPrefix(part, `"`)
+				part = strings.TrimSuffix(part, `"`)
+				if strings.HasSuffix(part, ",omitempty") {
+					fld.OmitEmpty = true
+					part = strings.ReplaceAll(part, ",omitempty", "")
+				}
+				fld.Designation = strings.TrimSpace(part)
+			case 2:
+				pairs := strings.Split(part, "[")
+				for i, pair := range pairs {
+					switch i {
+					case 0:
+						comments := strings.Split(pair, "//")
+						if len(comments) > 0 {
+							fld.Comment = comments[1]
+						}
+					default:
+						pair := strings.TrimSuffix(pair, "]")
+						kval := strings.Split(pair, " : ")
+						if len(kval) != 2 {
+							return nil, fmt.Errorf("can't parse key-value pair '%v'", kval)
+						}
+						fld.DefaulValDictionary[kval[0]] = kval[1]
+					}
+				}
+			}
+
+		}
+		if err := fld.Validate(); err != nil {
+			fmt.Println(err.Error())
+			fmt.Printf("%v : %v", fld.SourceName, err.Error())
+			continue
+		}
+		m.Fields = append(m.Fields, fld)
+	}
+	m.language = lang
 	return m, nil
 }
 

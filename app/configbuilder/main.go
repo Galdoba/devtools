@@ -52,6 +52,7 @@ func main() {
 		cmd.EditModel(),
 		cmd.DeleteModel(),
 		cmd.BuildSource(),
+		cmd.RestoreModel(),
 	}
 
 	app.After = func(c *cli.Context) error {
