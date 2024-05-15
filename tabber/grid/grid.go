@@ -104,4 +104,5 @@ func FormRelations(coords ...Coord) error {
 	if len(coordMap)%2 != 0 {
 		return fmt.Errorf("can't form reltions: must have even sets if coords")
 	}
+	return nil
 }

@@ -54,7 +54,13 @@ func editModel(cb configbuilder.Builder) error {
 	run := true
 	for run {
 		draw(cb)
-		action := userSelect("What is thy action?", action_ADD, action_EDIT, action_DELETE, action_DONE)
+		actions := []string{action_ADD, action_EDIT, action_DELETE}
+		if len(cb.Model().Fields) > 1 {
+			actions = append(actions, action_SWITCH_PLACE)
+		}
+		actions = append(actions, action_DONE)
+		action := userSelect("What is thy action?", actions...)
+
 		switch action {
 		case action_DONE:
 			if detectedError(cb) != nil {
@@ -76,6 +82,10 @@ func editModel(cb configbuilder.Builder) error {
 			}
 		case action_DELETE:
 			if err := deleteFieldAction(cb); err != nil {
+				userConfirm(fmt.Sprintf("%v\nContinue?", err.Error()))
+			}
+		case action_SWITCH_PLACE:
+			if err := switchFieldAction(cb); err != nil {
 				userConfirm(fmt.Sprintf("%v\nContinue?", err.Error()))
 			}
 		default:
@@ -179,6 +189,35 @@ func deleteFieldAction(cb configbuilder.Builder) error {
 		}
 	}
 	return cb.Model().Delete(index)
+}
+
+func switchFieldAction(cb configbuilder.Builder) error {
+	fields := []string{}
+
+	for _, f := range cb.Model().Fields {
+		fields = append(fields, f.SourceName)
+	}
+	toSwitch := userSelect("Select field to switch:", fields...)
+
+	fields = []string{}
+	for _, f := range cb.Model().Fields {
+		if f.SourceName == toSwitch {
+			continue
+		}
+		fields = append(fields, f.SourceName)
+	}
+	switchWith := userSelect(fmt.Sprintf("Select field switch '%v' with:", toSwitch), fields...)
+	index1, index2 := -1, -1
+	for i, f := range cb.Model().Fields {
+		if f.SourceName == toSwitch {
+			index1 = i
+		}
+		if f.SourceName == switchWith {
+			index2 = i
+		}
+
+	}
+	return cb.Model().SwitchFields(index1, index2)
 }
 
 func loadFromFile() (configbuilder.Builder, error) {

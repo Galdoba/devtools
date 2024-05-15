@@ -16,17 +16,18 @@ import (
 )
 
 const (
-	action_ADD    = "Add New Field"
-	action_EDIT   = "Edit Field"
-	action_DELETE = "Delete Field"
-	action_DONE   = "DONE"
-	sourceName    = "Sourcename"
-	dataType      = "DataType"
-	designation   = "Designation"
-	omit          = "OmitEmpty"
-	comment       = "Comment"
-	defaultVal    = "Default Value"
-	flag_Testmode = "testmode"
+	action_ADD          = "Add New Entry"
+	action_EDIT         = "Edit Fields"
+	action_DELETE       = "Delete Entry"
+	action_SWITCH_PLACE = "Switch Entries"
+	action_DONE         = "DONE"
+	sourceName          = "Sourcename"
+	dataType            = "DataType"
+	designation         = "Designation"
+	omit                = "OmitEmpty"
+	comment             = "Comment"
+	defaultVal          = "Default Value"
+	flag_Testmode       = "testmode"
 )
 
 var modelLanguage string

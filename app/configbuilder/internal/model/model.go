@@ -77,8 +77,20 @@ func (m *Model) Delete(i int) error {
 	m.Fields = newFields
 	return nil
 }
+
 func (m *Model) GetFields() []*Field {
 	return m.Fields
+}
+
+func (m *Model) SwitchFields(a, b int) error {
+	if a >= len(m.Fields) || a < 0 {
+		return fmt.Errorf("bad index: %v")
+	}
+	if b >= len(m.Fields) || b < 0 {
+		return fmt.Errorf("bad index: %v")
+	}
+	m.Fields[a], m.Fields[b] = m.Fields[b], m.Fields[a]
+	return nil
 }
 
 func NewField(language string) *Field {
