@@ -305,6 +305,12 @@ func (cb *configBuilder) GenerateSource() (string, error) {
 	str += "	return cfg.app\n"
 	str += "}\n"
 	str += "\n"
+	/////////////////////////////////////////////////////////////////////////////
+	str += "\n"
+	str += "//DefaultPath - return default path of current config\n"
+	str += "func DefaultPath() string {\n"
+	str += fmt.Sprintf("	return configmanager.DefaultConfigDir(appName) + "+`"config.`+"%v"+`"`+"\n", encodingExt)
+	str += "}\n"
 
 	str += "func stdConfigDir() string {\n"
 	str += "	path, err := os.UserHomeDir()\n"
