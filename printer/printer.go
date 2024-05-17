@@ -68,6 +68,12 @@ func New() *printManager {
 	return &pm
 }
 
+type Printer interface {
+	Print(int, ...interface{})
+	Println(int, ...interface{})
+	Printf(int, string, ...interface{})
+}
+
 func (pm *printManager) WithFile(logFilePath string) *printManager {
 	if logFilePath != "" {
 		file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
