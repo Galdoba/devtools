@@ -125,7 +125,6 @@ func (pm *printManager) Printf(level int, format string, args ...interface{}) {
 	if pm.consoleLevel <= level {
 		text := formatForConsole(pm.consolecolor, level, format, args...)
 		fmt.Print(text)
-		//pm.logConsole.Print(text)
 	}
 	if pm.file != "" && pm.fileLevel <= level {
 		t := time.Now()
@@ -146,18 +145,17 @@ func (pm *printManager) Printf(level int, format string, args ...interface{}) {
 	}
 }
 
-func (pm *printManager) Print(level int, format string) {
+func (pm *printManager) Print(level int, args ...interface{}) {
 	if pm.consoleLevel > level && pm.fileLevel > level {
 		return
 	}
 	if pm.consoleLevel <= level {
-		text := formatForConsole(pm.consolecolor, level, format)
+		text := formatForConsole(pm.consolecolor, level, "", args...)
 		fmt.Print(text)
-		//pm.logConsole.Print(text)
 	}
 	if pm.file != "" && pm.fileLevel <= level {
 		t := time.Now()
-		text := formatForFile(t, pm.appName, level, format)
+		text := formatForFile(t, pm.appName, level, "", args...)
 		text = strings.TrimSuffix(text, "\n")
 		if level <= lvl.TRACE {
 			if pm.lastMessage == nil {
@@ -174,18 +172,17 @@ func (pm *printManager) Print(level int, format string) {
 	}
 }
 
-func (pm *printManager) Println(level int, format string) {
+func (pm *printManager) Println(level int, args ...interface{}) {
 	if pm.consoleLevel > level && pm.fileLevel > level {
 		return
 	}
 	if pm.consoleLevel <= level {
-		text := formatForConsole(pm.consolecolor, level, format)
+		text := formatForConsole(pm.consolecolor, level, "", args...)
 		fmt.Println(text)
-		//pm.logConsole.Print(text)
 	}
 	if pm.file != "" && pm.fileLevel <= level {
 		t := time.Now()
-		text := formatForFile(t, pm.appName, level, format)
+		text := formatForFile(t, pm.appName, level, "", args...)
 		text = strings.TrimSuffix(text, "\n")
 		if level <= lvl.TRACE {
 			if pm.lastMessage == nil {
@@ -216,6 +213,11 @@ func (pm *printManager) Println(level int, format string) {
 // }
 
 func formatForConsole(colorOutput bool, level int, format string, args ...interface{}) string {
+	if format == "" {
+		for i := 0; i < len(args); i++ {
+			format += "%v"
+		}
+	}
 	s := fmt.Sprintf(format, args...)
 
 	// if level <= levelTRACE {
@@ -249,6 +251,11 @@ func formatForFile(t time.Time, caller string, level int, format string, args ..
 		s += " " + caller
 	}
 	s += ": "
+	if format == "" {
+		for i := 0; i < len(args); i++ {
+			format += "%v"
+		}
+	}
 	s += fmt.Sprintf(format, args...)
 
 	return s
