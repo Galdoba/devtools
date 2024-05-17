@@ -2,47 +2,92 @@ package printer
 
 import (
 	"fmt"
+	"log"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/Galdoba/devtools/printer/lvl"
 	"github.com/fatih/color"
 )
 
 type printManager struct {
-	file         string
-	fileLevel    int
-	consoleLevel int
-	appName      string
-	duration     time.Duration
-	//consolecolor bool
-	//durationReport bool
+	file string
+	//dest           *os.File
+	fileLevel      int
+	consoleLevel   int
+	appName        string
+	lastMessage    *time.Time
+	consolecolor   bool
+	durationReport bool
+	logConsole     *log.Logger
+	//logFile        *log.Logger
+	// loggerALL      *log.Logger
+	// loggerTRACE    *log.Logger
+	// loggerDEBUG    *log.Logger
+	// loggerNOTICE   *log.Logger
+	// loggerINFO     *log.Logger
+	// loggerREPORT   *log.Logger
+	// loggerWARN     *log.Logger
+	// loggerERROR    *log.Logger
+	// loggerFATAL    *log.Logger
 }
 
 const (
-	levelALL = iota
-	levelTRACE
-	levelDEBUG
-	levelNOTICE
-	levelINFO
-	levelREPORT
-	levelWARN
-	levelERROR
-	levelFATAL
-	levelOFF
-	timestamp = "2006-02-01 15:04:05"
+	levelALL    = iota
+	levelTRACE  //TRC
+	levelDEBUG  //DBG
+	levelNOTICE //NOT
+	levelINFO   //INF
+	levelREPORT //REP
+	levelWARN   //WRN
+	levelERROR  //ERR
+	levelFATAL  //FAT
+	levelOFF    //OFF
+	timestamp   = "2006-01-02 15:04:05.999"
 )
 
-func New(path string) *printManager {
-	return &printManager{
-		file: path,
+func New() *printManager {
+	pm := printManager{
+		consoleLevel: lvl.INFO,
+		fileLevel:    lvl.OFF,
 	}
+	pm.logConsole = log.New(os.Stderr, "", 0)
+	// if logFilePath != "" {
+	// 	file, err := os.OpenFile(pm.file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	// 	if err != nil {
+	// 		return &pm
+	// 	}
+	// 	defer file.Close()
+	// 	pm.file = logFilePath
+	// 	pm.fileLevel = lvl.INFO
+	// 	//pm.logFile = log.New(pm.dest, "", 0)
+
+	// }
+
+	return &pm
+}
+
+func (pm *printManager) WithFile(logFilePath string) *printManager {
+	if logFilePath != "" {
+		file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Println(err.Error())
+			return pm
+		}
+		defer file.Close()
+		pm.file = logFilePath
+		pm.fileLevel = lvl.INFO
+		fmt.Println(pm.file, "set")
+	}
+	return pm
 }
 
 func (pm *printManager) WithFileLevel(fl int) *printManager {
 	switch fl {
 	default:
 		return pm
-	case levelALL, levelTRACE, levelDEBUG, levelNOTICE, levelINFO, levelWARN, levelERROR, levelFATAL, levelOFF:
+	case lvl.ALL, lvl.TRACE, lvl.DEBUG, lvl.NOTICE, lvl.INFO, lvl.WARN, lvl.ERROR, lvl.FATAL, lvl.OFF:
 		pm.fileLevel = fl
 		return pm
 	}
@@ -52,10 +97,15 @@ func (pm *printManager) WithConsoleLevel(fl int) *printManager {
 	switch fl {
 	default:
 		return pm
-	case levelALL, levelTRACE, levelDEBUG, levelNOTICE, levelINFO, levelWARN, levelERROR, levelFATAL, levelOFF:
-		pm.fileLevel = fl
+	case lvl.ALL, lvl.TRACE, lvl.DEBUG, lvl.NOTICE, lvl.INFO, lvl.WARN, lvl.ERROR, lvl.FATAL, lvl.OFF:
+		pm.consoleLevel = fl
 		return pm
 	}
+}
+
+func (pm *printManager) WithConsoleColors(ccol bool) *printManager {
+	pm.consolecolor = ccol
+	return pm
 }
 
 func (pm *printManager) WithAppName(appName string) *printManager {
@@ -63,20 +113,114 @@ func (pm *printManager) WithAppName(appName string) *printManager {
 	return pm
 }
 
-func (pm *printManager) Info(format string, args ...interface{}) []error {
-	if pm.fileLevel >= levelINFO {
-		fileText := formatForFile(pm.appName, levelINFO, pm.duration, format, args...)
-		writeToFile(pm.file, fileText)
-		fmt.Println()
-	}
+/*
+log.Info("answer is %v",42)
+log.Fprintf(lv.INFO,"answer is %v",42)
+*/
 
+func (pm *printManager) Printf(level int, format string, args ...interface{}) {
+	if pm.consoleLevel > level && pm.fileLevel > level {
+		return
+	}
+	if pm.consoleLevel <= level {
+		text := formatForConsole(pm.consolecolor, level, format, args...)
+		fmt.Print(text)
+		//pm.logConsole.Print(text)
+	}
+	if pm.file != "" && pm.fileLevel <= level {
+		t := time.Now()
+		text := formatForFile(t, pm.appName, level, format, args...)
+		text = strings.TrimSuffix(text, "\n")
+		if level <= lvl.TRACE {
+			if pm.lastMessage == nil {
+				pm.lastMessage = &t
+			}
+			dur := time.Since(*pm.lastMessage)
+			text += " ( " + dur.String() + " )"
+			pm.lastMessage = &t
+		}
+		file, _ := os.OpenFile(pm.file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		defer file.Close()
+
+		file.WriteString(text + "\n")
+	}
 }
 
-func formatForConsole(colorOutput bool, level int, duration time.Duration, format string, args ...interface{}) string {
-	s := fmt.Sprintf(format, args...)
-	if level <= levelTRACE {
-		s += " (" + duration.String() + ")"
+func (pm *printManager) Print(level int, format string) {
+	if pm.consoleLevel > level && pm.fileLevel > level {
+		return
 	}
+	if pm.consoleLevel <= level {
+		text := formatForConsole(pm.consolecolor, level, format)
+		fmt.Print(text)
+		//pm.logConsole.Print(text)
+	}
+	if pm.file != "" && pm.fileLevel <= level {
+		t := time.Now()
+		text := formatForFile(t, pm.appName, level, format)
+		text = strings.TrimSuffix(text, "\n")
+		if level <= lvl.TRACE {
+			if pm.lastMessage == nil {
+				pm.lastMessage = &t
+			}
+			dur := time.Since(*pm.lastMessage)
+			text += " ( " + dur.String() + " )"
+			pm.lastMessage = &t
+		}
+		file, _ := os.OpenFile(pm.file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		defer file.Close()
+
+		file.WriteString(text + "\n")
+	}
+}
+
+func (pm *printManager) Println(level int, format string) {
+	if pm.consoleLevel > level && pm.fileLevel > level {
+		return
+	}
+	if pm.consoleLevel <= level {
+		text := formatForConsole(pm.consolecolor, level, format)
+		fmt.Println(text)
+		//pm.logConsole.Print(text)
+	}
+	if pm.file != "" && pm.fileLevel <= level {
+		t := time.Now()
+		text := formatForFile(t, pm.appName, level, format)
+		text = strings.TrimSuffix(text, "\n")
+		if level <= lvl.TRACE {
+			if pm.lastMessage == nil {
+				pm.lastMessage = &t
+			}
+			dur := time.Since(*pm.lastMessage)
+			text += " ( " + dur.String() + " )"
+			pm.lastMessage = &t
+		}
+		file, _ := os.OpenFile(pm.file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		defer file.Close()
+
+		file.WriteString(text + "\n")
+	}
+}
+
+// func (pm *printManager) Info(format string, args ...interface{}) {
+// 	pm.lastMessage = time.Now()
+// 	if pm.fileLevel >= levelINFO {
+// 		fileText := formatForFile(pm.lastMessage, pm.appName, levelINFO, format, args...)
+// 		writeToFile(pm.file, fileText)
+// 	}
+// 	if pm.consoleLevel >= levelINFO {
+// 		text := formatForConsole(pm.consolecolor, levelINFO, format, args...)
+// 		fmt.Println(text)
+// 	}
+
+// }
+
+func formatForConsole(colorOutput bool, level int, format string, args ...interface{}) string {
+	s := fmt.Sprintf(format, args...)
+
+	// if level <= levelTRACE {
+	// 	s += " (" + duration.String() + ")"
+	// }
 	if !colorOutput {
 		return s
 	}
@@ -95,22 +239,23 @@ func formatForConsole(colorOutput bool, level int, duration time.Duration, forma
 	return s
 }
 
-func formatForFile(caller string, level int, duration time.Duration, format string, args ...interface{}) string {
-	t := time.Now()
+func formatForFile(t time.Time, caller string, level int, format string, args ...interface{}) string {
 	s := t.Format(timestamp)
+	for len(s) < 23 {
+		s += "0"
+	}
+	s += " [" + levelStr(level) + "]"
 	if caller != "" {
 		s += " " + caller
 	}
-	s += "[" + levelStr(level) + "]: "
+	s += ": "
 	s += fmt.Sprintf(format, args...)
-	if level <= levelTRACE {
-		s += " (" + duration.String() + ")"
-	}
+
 	return s
 }
 
 func writeToFile(filename, text string) error {
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0770)
 	if err != nil {
 		return fmt.Errorf("open logfile fail: %v", err.Error())
 	}
@@ -127,25 +272,25 @@ func levelStr(level int) string {
 	default:
 		return "       "
 	case levelALL:
-		return "ALL    "
+		return " ALL  "
 	case levelTRACE:
-		return "TRACE  "
+		return "TRACE "
 	case levelNOTICE:
-		return "NOTICE "
+		return "NOTICE"
 	case levelDEBUG:
-		return "DEBUG  "
+		return "DEBUG "
 	case levelINFO:
-		return "INFO   "
+		return " INFO "
 	case levelREPORT:
-		return "REPORT "
+		return "REPORT"
 	case levelWARN:
-		return "WARNING"
+		return " WARN "
 	case levelERROR:
-		return "ERROR  "
+		return "ERROR "
 	case levelFATAL:
-		return "FATAL  "
+		return "FATAL "
 	case levelOFF:
-		return "OFF    "
+		return " OFF  "
 	}
 }
 
