@@ -152,26 +152,18 @@ func (pm *printManager) Printf(level int, format string, args ...interface{}) {
 	}
 }
 
-func (pm *printManager) Errorf(level int, format string, args ...interface{}) error {
-	if pm.consoleLevel > level && pm.fileLevel > level {
+func (pm *printManager) Errorf(format string, args ...interface{}) error {
+	if pm.consoleLevel > lvl.ERROR && pm.fileLevel > lvl.ERROR {
 		return fmt.Errorf(format, args...)
 	}
-	if pm.consoleLevel <= level {
-		text := formatForConsole(pm.consolecolor, level, format, args...)
+	if pm.consoleLevel <= lvl.ERROR {
+		text := formatForConsole(pm.consolecolor, lvl.ERROR, format, args...)
 		fmt.Print(text)
 	}
-	if pm.file != "" && pm.fileLevel <= level {
+	if pm.file != "" && pm.fileLevel <= lvl.ERROR {
 		t := time.Now()
-		text := formatForFile(t, pm.appName, level, format, args...)
+		text := formatForFile(t, pm.appName, lvl.ERROR, format, args...)
 		text = strings.TrimSuffix(text, "\n")
-		if level <= lvl.TRACE {
-			if pm.lastMessage == nil {
-				pm.lastMessage = &t
-			}
-			dur := time.Since(*pm.lastMessage)
-			text += " ( " + dur.String() + " )"
-			pm.lastMessage = &t
-		}
 		file, _ := os.OpenFile(pm.file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		defer file.Close()
 
