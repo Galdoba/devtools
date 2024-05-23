@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Galdoba/devtools/app/configbuilder/cmd"
-	"github.com/Galdoba/devtools/app/configbuilder/config"
+	"github.com/Galdoba/devtools/app/tabledit/cmd"
+	"github.com/Galdoba/devtools/app/tabledit/config"
 	"github.com/Galdoba/devtools/configmanager"
 	"github.com/urfave/cli/v2"
 )
@@ -15,7 +15,10 @@ const (
 	programName = "tabledit"
 )
 
+var cfg config.Config
+
 func main() {
+
 	app := cli.NewApp()
 	app.Version = "v 0.0.1"
 	app.Name = programName

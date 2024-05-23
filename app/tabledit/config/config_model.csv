@@ -1,0 +1,5 @@
+DefaultTable,string,Default Table Path,false,overriden by key
+KeymapsSelect,map[string]string,Keymaps Select Mode,false,
+KeymapsEdit,map[string]string,Keymaps Edit Mode,false,
+Log,string,Log Path,false,
+encoding,yaml, , , 
