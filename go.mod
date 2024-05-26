@@ -32,6 +32,7 @@ require (
 	github.com/evertras/bubble-table v0.16.0
 	github.com/fatih/color v1.17.0
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/macroblock/imed v0.0.0-20240304024758-b43fa77f2323
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect

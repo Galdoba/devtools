@@ -27,7 +27,26 @@ func NewModel() (model, error) {
 	m.table = tab
 
 	m.ltab = liptab.New()
-	m.ltab.Headers([]string{"11", "11", "11", "11", "11"}...)
+	m.ltab.StyleFunc(tableStyle)
+	m.ltab.Headers(
+		m.table.Cell(0, 0).Content,
+		m.table.Cell(1, 0).Content,
+		m.table.Cell(2, 0).Content,
+		m.table.Cell(3, 0).Content,
+		m.table.Cell(4, 0).Content,
+		m.table.Cell(5, 0).Content,
+		m.table.Cell(6, 0).Content,
+		m.table.Cell(7, 0).Content,
+		m.table.Cell(8, 0).Content,
+		m.table.Cell(9, 0).Content,
+		m.table.Cell(10, 0).Content,
+		m.table.Cell(11, 0).Content,
+		m.table.Cell(12, 0).Content,
+		m.table.Cell(13, 0).Content,
+		m.table.Cell(14, 0).Content,
+	)
+
+	//m.ltab.Width(totalW(m.table))
 	return m, err
 }
 
@@ -52,15 +71,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-var styleHeader = lipgloss.NewStyle().
-	Border(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("66")).
-	BorderBackground(lipgloss.Color("15"))
-
-var styleCell = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("80")).
-	BorderBackground(lipgloss.Color("26"))
+var tableStyle = func(row, col int) lipgloss.Style {
+	switch {
+	case row == 0:
+		return lipgloss.NewStyle().Padding(0, 1).Align(lipgloss.Center)
+	case row%2 == 0:
+		return lipgloss.NewStyle().Padding(0, 1).Background(lipgloss.Color("84"))
+	default:
+		return lipgloss.NewStyle().Padding(0, 1)
+	}
+}
 
 func (m model) View() string {
 	if m.table == nil {
@@ -72,15 +92,24 @@ func (m model) View() string {
 	s := header + "\n"
 	m.ltab.ClearRows()
 
-	strDat := liptab.NewStringData([]string{"Source ", "TYPE ", "Description ", "OMIT ", "Comment "})
-	strDat.Append([]string{"Source ", "TYPE ", "Description ", "OMIT ", "Comment "})
-	for _, data := range m.table.Cells() {
-		strDat.Append(data)
+	strDat := liptab.NewStringData()
+	for i, data := range m.table.Cells() {
+		// for d := range data {
+		// 	data[d], _ = translit.Do(data[d])
+		// }
+
+		if len(m.table.Cells())-i < 10 {
+			strDat.Append(data)
+		}
+		if i < 10 {
+			strDat.Append(data)
+		}
+
 	}
 	m.ltab.Data(strDat)
 	//m.ltab.Width(totalW(m.table))
 
-	s += m.ltab.Render() + "\n"
+	s += m.ltab.String() + "\n"
 	//s += m.table.String() + "\n"
 	s += "MODE: " + m.mode + "\n"
 

@@ -68,19 +68,24 @@ func (t *table) SetSize(col, row int) error {
 	return nil
 }
 
-func (t *table) SetContent(col, row int, cont string) error {
-	if row > len(t.Data)-1 {
-		return fmt.Errorf("bad row '%v' for table (cols:%v rows:%v)", row, len(t.Data[0]), len(t.Data))
-	}
-	if row < 0 {
-		return fmt.Errorf("bad row '%v' for table (cols:%v rows:%v)", row, len(t.Data[0]), len(t.Data))
-	}
-	if col > len(t.Data[0])-1 {
+func (t *table) SetContent(row, col int, cont string) error {
+	if col > len(t.Data[0]) {
+		fmt.Println("err 1")
 		return fmt.Errorf("bad col '%v' for table (cols:%v rows:%v)", col, len(t.Data[0]), len(t.Data))
 	}
 	if col < 0 {
+		fmt.Println("err 2")
 		return fmt.Errorf("bad col '%v' for table (cols:%v rows:%v)", col, len(t.Data[0]), len(t.Data))
 	}
+	if row > len(t.Data)-1 {
+		fmt.Println("err 3")
+		return fmt.Errorf("bad row '%v' for table (cols:%v rows:%v)", row, len(t.Data[0]), len(t.Data))
+	}
+	if row < 0 {
+		fmt.Println("err 4")
+		return fmt.Errorf("bad row '%v' for table (cols:%v rows:%v)", row, len(t.Data[0]), len(t.Data))
+	}
+
 	t.Data[row][col].Content = cont
 	return nil
 }
@@ -173,15 +178,15 @@ func ImportCSV(path string) (*table, error) {
 		return nil, fmt.Errorf("csv conversion failed: %v", err.Error())
 	}
 	entries := e.Entries()
-	w := len(entries)
-	h := len(entries[0].Fields())
+	rows := len(entries)
+	cols := len(entries[0].Fields())
 	tab := New()
-	if err := tab.SetSize(w, h); err != nil {
+	if err := tab.SetSize(cols, rows); err != nil {
 		return nil, fmt.Errorf("can't set size: %v", err.Error())
 	}
 	for r, entry := range entries {
 		for c, field := range entry.Fields() {
-			if err := tab.SetContent(c, r, field); err != nil {
+			if err := tab.SetContent(r, c, field); err != nil {
 				return nil, fmt.Errorf("can't set cell content: %v", err.Error())
 			}
 		}

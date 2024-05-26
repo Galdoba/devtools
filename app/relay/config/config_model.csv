@@ -1,0 +1,3 @@
+MsgStore,string,Message Storage Directory,false,, , 
+Cycle,int,Restart Cycle,false,Restart loop for relay (seconds),default,3
+encoding,yaml, , , , , 
