@@ -12,6 +12,7 @@ import (
 
 const (
 	appName = "relay"
+	version = "v 0.2.1"
 )
 
 type configuration struct {
@@ -26,7 +27,6 @@ type ConfigFile interface {
 	Save() error
 	SaveAs(string) error
 	SetDefault() error
-	SetMessageStorageDirectory(string)
 	Path() string
 	AppName() string
 	IsCustom() bool
@@ -36,6 +36,8 @@ type Config interface {
 	ConfigFile
 	MessageStorageDirectory() string
 	RestartCycle() int
+	SetMessageStorageDirectory(string)
+	SetRestartCycle(int)
 }
 
 ////////////NEW-SAVE-LOAD////////////
@@ -106,6 +108,8 @@ func loadConfig(path string) (*configuration, error) {
 		return nil, fmt.Errorf("%v", err.Error())
 	}
 	cfg := &configuration{}
+	cfg.path = path
+	cfg.app = appName
 	err = yaml.Unmarshal(bt, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("%v", err.Error())
@@ -185,6 +189,7 @@ func header() string {
 	hdr += `#                     Check formatting rules before editing                    #` + "\n"
 	hdr += `#                 https://docs.fileformat.com/programming/yaml/                #` + "\n"
 	hdr += `################################################################################` + "\n"
+	hdr += `# builder version  : v 0.2.1` + "\n"
 	hdr += `# expected location: C:\Users\pemaltynov\.config\relay\config.yaml` + "\n"
 	hdr += `# app name         : relay` + "\n"
 	hdr += `` + "\n"

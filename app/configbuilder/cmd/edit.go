@@ -29,7 +29,7 @@ func EditModel() *cli.Command {
 			if err != nil {
 				return fmt.Errorf("can't load model: %v", err.Error())
 			}
-			err = cb.SetSourceDir(".")
+			err = cb.Setup(".", c.App.Version)
 			if err != nil {
 				return err
 			}

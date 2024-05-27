@@ -17,7 +17,7 @@ const (
 
 func main() {
 	app := cli.NewApp()
-	app.Version = "v 0.2.0"
+	app.Version = "v 0.2.1"
 	app.Name = programName
 	app.Usage = "Fast generation of config source file for go applications"
 	app.Description = "configbuilder manage interactive loop for creating/editing config model and generates source code for\n" +

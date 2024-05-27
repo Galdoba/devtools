@@ -37,6 +37,8 @@ type pathStr struct {
 	isAbs      bool
 }
 
+var sep = string(filepath.Separator)
+
 func newPath(input string) (*pathStr, error) {
 	if strings.TrimSpace(input) == "" {
 		return nil, fmt.Errorf("path was not specified")
@@ -120,26 +122,98 @@ func Touch(path string) error {
 	}
 }
 
-func StdPath(name string, dirs ...string) string {
+func ExitErr(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	} else if errors.Is(err, os.ErrNotExist) {
+		return err
+	} else {
+		return fmt.Errorf("can't confirm: %v", err)
+	}
+}
+
+//HomeDir - User Home
+func HomeDir() string {
 	path, err := os.UserHomeDir()
 	if err != nil {
 		panic(err.Error())
 	}
-	sep := string(filepath.Separator)
 	path += sep
-	for _, dir := range dirs {
-		path += dir + sep
-	}
-	return path + name
-
+	return path
 }
 
-func StdConfigDir(name string) string {
-	path, err := os.UserHomeDir()
-	if err != nil {
-		panic(err.Error())
+//AppName - return appname with root dirs for project
+// //exapmle:
+//   AppName("games", "fluppy", "bird") ==> games/fluppy/bird
+func AppName(parts ...string) string {
+	if len(parts) == 0 {
+		return ""
 	}
-	sep := string(filepath.Separator)
-	path += sep
-	return path + ".config" + sep + name + sep
+	path := ""
+	for _, p := range parts {
+		path += p + sep
+	}
+	return strings.TrimSuffix(path, sep)
 }
+
+//StdConfigDir - Standard Config Dir for app [appName]
+func StdConfigDir(appName string) string {
+	return HomeDir() + ".config" + sep + appName + sep
+}
+
+//StdLogDir - Standard Log Dir for app [appName]
+func StdLogDir() string {
+	return HomeDir() + ".log" + sep
+}
+
+//StdLogPath - Standard Log File path for app [appName]
+func StdLogPath(appName string, postfixes ...string) string {
+	dir := StdLogDir()
+	file := appName
+	for _, p := range postfixes {
+		file += "_" + p
+	}
+	file += ".log"
+	return dir + file
+}
+
+func AppUserDataDir(appName string, custom ...string) string {
+	dataDir := HomeDir() + appName + sep + "user_data" + sep
+	for _, p := range custom {
+		dataDir += p + sep
+	}
+	return dataDir
+}
+
+func AppProgramDataDir(appName string, custom ...string) string {
+	dataDir := HomeDir() + appName + sep + "program_data" + sep
+	for _, p := range custom {
+		dataDir += p + sep
+	}
+	return dataDir
+}
+
+func AppAssetsDir(appName string) string {
+	return AppProgramDataDir(appName) + "assets" + sep
+}
+
+func AppStorageDir(appName string) string {
+	return AppProgramDataDir(appName) + "storage" + sep
+}
+
+func AppTmpDir(appName string) string {
+	return AppProgramDataDir(appName) + ".tmp" + sep
+}
+
+// func StdPath(name string, dirs ...string) string {
+// 	path, err := os.UserHomeDir()
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+// 	sep := string(filepath.Separator)
+// 	path += sep
+// 	for _, dir := range dirs {
+// 		path += dir + sep
+// 	}
+// 	return path + name
+// }

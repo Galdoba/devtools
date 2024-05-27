@@ -18,6 +18,7 @@ type configBuilder struct {
 	pathToConfig string
 	sourcePath   string
 	app          string
+	version      string
 	language     string
 	model        *model.Model
 }
@@ -34,7 +35,7 @@ func New(language string, mdl ...*model.Model) *configBuilder {
 }
 
 type Builder interface {
-	SetSourceDir(string) error
+	Setup(string, string) error
 	AddField(*model.Field) error
 	DeleteField(int) error
 	Model() *model.Model
@@ -49,7 +50,10 @@ func (cb *configBuilder) SetEncoding(s string) error {
 	return nil
 }
 
-func (cb *configBuilder) SetSourceDir(dir string) error {
+//Setup - feed app data to configVulder
+//dir = working directory
+//version = caller app version
+func (cb *configBuilder) Setup(dir, version string) error {
 	if err := CheckWorkingDirectory(dir); err != nil {
 		return fmt.Errorf("work directory validation: %v", err)
 	}
@@ -61,6 +65,7 @@ func (cb *configBuilder) SetSourceDir(dir string) error {
 	cb.sourcePath = dir + sep + SOURCE_FILE
 	cb.app = app
 	cb.pathToConfig = StdConfigPath(cb.app, cb.language)
+	cb.version = version
 	return nil
 }
 
@@ -149,6 +154,7 @@ func (cb *configBuilder) GenerateSource() (string, error) {
 
 	str += "const (\n"
 	str += fmt.Sprintf("	appName = "+`"`+"%v"+`"`+"\n", cb.app)
+	str += fmt.Sprintf("	version = "+`"`+"%v"+`"`+"\n", cb.version)
 	str += ")\n"
 	str += "\n"
 
@@ -178,6 +184,10 @@ func (cb *configBuilder) GenerateSource() (string, error) {
 	for _, cf := range cb.model.Fields {
 		funcName := funcName(cf.Designation)
 		str += fmt.Sprintf("	%v()	%v\n", funcName, cf.DataType)
+	}
+	for _, cf := range cb.model.Fields {
+		funcName := funcName(cf.Designation)
+		str += fmt.Sprintf("	Set%v(%v)\n", funcName, cf.DataType)
 	}
 	str += "}\n"
 	str += "\n"
@@ -277,6 +287,9 @@ func (cb *configBuilder) GenerateSource() (string, error) {
 	str += "		return nil, fmt.Errorf(" + `"%` + `v"` + ", err.Error())\n"
 	str += "	}\n"
 	str += "	cfg := &configuration{}\n"
+	str += "	cfg.path = path\n"
+	str += "	cfg.app = appName\n"
+
 	str += fmt.Sprintf("	err = %v\n", unmarshalFunc)
 	str += "	if err != nil {\n"
 	str += "		return nil, fmt.Errorf(" + `"%` + `v"` + ", err.Error())\n"
@@ -427,8 +440,10 @@ func (cb *configBuilder) headerConstruct() string {
 		s += `#                 https://docs.fileformat.com/programming/yaml/                #` + "\n"
 	}
 	s += "################################################################################\n"
+	s += fmt.Sprintf("# builder version  : %v\n", cb.version)
 	s += `# expected location: ` + cb.pathToConfig + "\n"
 	s += fmt.Sprintf("# app name         : %v\n", cb.app)
+
 	return s
 }
 

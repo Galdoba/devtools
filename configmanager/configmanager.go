@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var ErrNoConfig = fmt.Errorf("no candidates detected")
+var ErrNoConfig = fmt.Errorf("no config candidates detected")
 var ErrCantReadDir = fmt.Errorf("can't read default config dir")
 
 // DefaultConfigPath - seeks file with name "config" for application in standard directory.

@@ -68,7 +68,7 @@ func NewModel() *cli.Command {
 				return fmt.Errorf("can't create new model: encoding was not selected")
 			}
 			cb := configbuilder.New(modelLanguage)
-			err = cb.SetSourceDir(workingDir)
+			err = cb.Setup(workingDir, c.App.Version)
 			if err != nil {
 				return err
 			}

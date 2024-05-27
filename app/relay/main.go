@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/Galdoba/devtools/app/relay/cmd"
+	"github.com/Galdoba/devtools/app/relay/config"
+	"github.com/Galdoba/devtools/gpath"
 	"github.com/urfave/cli/v2"
 )
 
@@ -22,7 +24,17 @@ func main() {
 	// An action to execute before any subcommands are run, but after the context is ready
 	// If a non-nil error is returned, no subcommands are run
 	app.Before = func(c *cli.Context) error {
-
+		_, err := config.Load()
+		if err != nil {
+			cfg := config.New()
+			if err := cfg.SetDefault(); err != nil {
+				return err
+			}
+			cfg.SetMessageStorageDirectory(gpath.AppStorageDir(c.App.Name))
+			if err := cfg.Save(); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 	app.Commands = []*cli.Command{

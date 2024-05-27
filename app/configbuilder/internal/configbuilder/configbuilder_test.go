@@ -10,7 +10,7 @@ import (
 func TestSourcePath(t *testing.T) {
 	cb := New("yaml")
 
-	err := cb.SetSourceDir(`C:\Users\Admin\go\src\github.com\Galdoba\ffstuff\app\mfrip\config\`)
+	err := cb.Setup(`C:\Users\Admin\go\src\github.com\Galdoba\ffstuff\app\mfrip\config\`, "test")
 	if err != nil {
 		t.Errorf("met error: %v", err.Error())
 	}
