@@ -20,6 +20,7 @@ const (
 	SourcePath
 	DestinationPath
 	DataPath
+	author = ".galdoba"
 )
 
 type pathStr struct {
@@ -132,7 +133,7 @@ func ExitErr(path string) error {
 	}
 }
 
-//HomeDir - User Home
+// HomeDir - User Home
 func HomeDir() string {
 	path, err := os.UserHomeDir()
 	if err != nil {
@@ -142,9 +143,10 @@ func HomeDir() string {
 	return path
 }
 
-//AppName - return appname with root dirs for project
+// AppName - return appname with root dirs for project
 // //exapmle:
-//   AppName("games", "fluppy", "bird") ==> games/fluppy/bird
+//
+//	AppName("games", "fluppy", "bird") ==> games/fluppy/bird
 func AppName(parts ...string) string {
 	if len(parts) == 0 {
 		return ""
@@ -156,17 +158,17 @@ func AppName(parts ...string) string {
 	return strings.TrimSuffix(path, sep)
 }
 
-//StdConfigDir - Standard Config Dir for app [appName]
+// StdConfigDir - Standard Config Dir for app [appName]
 func StdConfigDir(appName string) string {
 	return HomeDir() + ".config" + sep + appName + sep
 }
 
-//StdLogDir - Standard Log Dir for app [appName]
+// StdLogDir - Standard Log Dir for app [appName]
 func StdLogDir() string {
 	return HomeDir() + ".log" + sep
 }
 
-//StdLogPath - Standard Log File path for app [appName]
+// StdLogPath - Standard Log File path for app [appName]
 func StdLogPath(appName string, postfixes ...string) string {
 	dir := StdLogDir()
 	file := appName
@@ -178,7 +180,7 @@ func StdLogPath(appName string, postfixes ...string) string {
 }
 
 func AppUserDataDir(appName string, custom ...string) string {
-	dataDir := HomeDir() + appName + sep + "user_data" + sep
+	dataDir := HomeDir() + author + sep + appName + sep + "user_data" + sep
 	for _, p := range custom {
 		dataDir += p + sep
 	}
@@ -186,7 +188,7 @@ func AppUserDataDir(appName string, custom ...string) string {
 }
 
 func AppProgramDataDir(appName string, custom ...string) string {
-	dataDir := HomeDir() + appName + sep + "program_data" + sep
+	dataDir := HomeDir() + author + sep + appName + sep + "program_data" + sep
 	for _, p := range custom {
 		dataDir += p + sep
 	}

@@ -39,6 +39,8 @@ func main() {
 	}
 	app.Commands = []*cli.Command{
 		cmd.Health(),
+		cmd.Newjob(),
+		cmd.Start(),
 	}
 
 	app.After = func(c *cli.Context) error {
