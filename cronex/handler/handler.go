@@ -113,6 +113,7 @@ func Start(inStorage string, opts ...Option) error {
 			cycle = o.cycle
 		}
 	}
+	jobs := make(chan *job.Job)
 	h := New(inStorage).With(opts...)
 	for {
 		found = 0
@@ -132,6 +133,7 @@ func Start(inStorage string, opts ...Option) error {
 				continue
 			}
 			found++
+			jobs <- jb
 			if err := h.Handle(jb); err != nil {
 				jobErr++
 				fmt.Println(err.Error())
@@ -141,4 +143,9 @@ func Start(inStorage string, opts ...Option) error {
 		time.Sleep(time.Second * time.Duration(cycle))
 	}
 	return nil
+}
+
+func pseudoJob() *job.Job {
+	j := job.Create("ffmpeg", "-i", `\\192.168.31.4\buffer\IN\@TEST\Industriya_s02e08_SER_12315.mp4`)
+	return j
 }

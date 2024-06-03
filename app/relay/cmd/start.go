@@ -2,13 +2,17 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/Galdoba/devtools/app/relay/config"
+	"github.com/Galdoba/devtools/cls"
 	"github.com/Galdoba/devtools/cronex/handler"
 	"github.com/urfave/cli/v2"
 )
 
 const ()
+
+var logger = cls.New()
 
 func Start() *cli.Command {
 	cmnd := &cli.Command{
@@ -22,6 +26,9 @@ func Start() *cli.Command {
 			if err != nil {
 				return fmt.Errorf(err.Error())
 			}
+			logger.AddStdErr(cls.LV_DEBUG, "", 0)
+			logger.AddFile(cfg.LogLocation(), cls.LV_DEBUG, "", log.Ldate|log.Ltime)
+
 			handler.Start(cfg.MessageStorageDirectory(),
 				handler.Cycle(cfg.RestartCycle()),
 			)
