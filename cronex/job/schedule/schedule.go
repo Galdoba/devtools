@@ -28,24 +28,23 @@ type Schedule interface {
 	Allowance(int) []int
 }
 
-func TimeValid(sched Schedule) bool {
-	now := time.Now().Local()
-	if !slice.HasElement(sched.Allowance(SECOND), now.Second()) {
+func TimeValid(sched Schedule, t time.Time) bool {
+	if !slice.HasElement(sched.Allowance(SECOND), t.Second()) {
 		return false
 	}
-	if !slice.HasElement(sched.Allowance(MINUTE), now.Minute()) {
+	if !slice.HasElement(sched.Allowance(MINUTE), t.Minute()) {
 		return false
 	}
-	if !slice.HasElement(sched.Allowance(HOUR), now.Hour()) {
+	if !slice.HasElement(sched.Allowance(HOUR), t.Hour()) {
 		return false
 	}
-	if !slice.HasElement(sched.Allowance(DayOfMonth), now.Day()) {
+	if !slice.HasElement(sched.Allowance(DayOfMonth), t.Day()) {
 		return false
 	}
-	if !slice.HasElement(sched.Allowance(MONTH), int(now.Month())) {
+	if !slice.HasElement(sched.Allowance(MONTH), int(t.Month())) {
 		return false
 	}
-	if !slice.HasElement(sched.Allowance(DayOfWeek), int(now.Weekday())) {
+	if !slice.HasElement(sched.Allowance(DayOfWeek), int(t.Weekday())) {
 		return false
 	}
 	return true

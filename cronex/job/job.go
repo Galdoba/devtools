@@ -25,17 +25,15 @@ import (
 */
 
 type Job struct {
-	ID               string   `json:"ID,omitempty"`                          //timestamp time.Now().UnixNano()
-	ScheduleStr      string   `json:"Schedule"`                              //* * * * *
-	Repeatable       bool     `json:"Repeatable,omitempty"`                  //repeat after first handling
-	DeleteIfSuccess  bool     `json:"Delete after job completion,omitempty"` //delete after success
-	DeleteIfFail     bool     `json:"Delete after fail atempt,omitempty"`    //delete after fail
-	DeleteImmediatly bool     `json:"Delete Immediatly,omitempty"`           //delete upon touch
-	InProgress       bool     `json:"In Progress,omitempty"`                 //flag for handler
-	Skip             bool     `json:"Skip,omitempty"`                        //flag for handler: do not start atempt but log as event
-	Halt             bool     `json:"Halt,omitempty"`                        //flag for handler: do not start atempt, do not log as event (overwrite SKIP)
-	Atempts          int      `json:"Total Atempts,omitempty"`               //Atempt Counter
-	Done             int      `json:"Total Successes,omitempty"`             //Success Counter
+	ID               string   `json:"ID,omitempty"`                //timestamp time.Now().UnixNano()
+	ScheduleStr      string   `json:"Schedule"`                    //* * * * *
+	Repeatable       bool     `json:"Repeatable,omitempty"`        //repeat after first handling
+	DeleteImmediatly bool     `json:"Delete Immediatly,omitempty"` //delete upon touch
+	InProgress       bool     `json:"In Progress,omitempty"`       //flag for handler
+	Skip             bool     `json:"Skip,omitempty"`              //flag for handler: do not start atempt but log as event
+	Halt             bool     `json:"Halt,omitempty"`              //flag for handler: do not start atempt, do not log as event (overwrite SKIP)
+	Atempts          int      `json:"Total Atempts,omitempty"`     //Atempt Counter
+	Done             int      `json:"Total Successes,omitempty"`   //Success Counter
 	StartDir         string   `json:"Run From,omitempty"`
 	Handler          string   `json:"Handler utility"`
 	Args             []string `json:"Args,omitempty"`
@@ -53,12 +51,13 @@ type Job struct {
 }
 
 // Newjob - создает объект Job
-func Create(handler string, args ...string) *Job {
+func Create(storage string, agent string, args ...string) *Job {
 	job := Job{}
 	job.ID = newJobID()
-	job.Handler = handler
+	job.Handler = agent
 	job.Args = args
 	job.errMsg = "no validation commenced"
+	job.saveTo = storage + string(filepath.Separator) + job.ID + ".json"
 	return &job
 }
 
@@ -100,8 +99,8 @@ func (job *Job) validate() {
 	if job.errMsg != "" {
 		return
 	}
-	if job.saveTo == "" {
-		job.errMsg = "path was not set"
+	if !pathIsValid(job.saveTo) {
+		job.errMsg = "path invalid: " + job.saveTo
 		return
 	}
 	if job.ScheduleStr == "" {
@@ -135,18 +134,10 @@ func writeAsJson(job *Job) error {
 }
 
 func pathIsValid(path string) bool {
-	f, err := os.Stat(path)
+	dir := filepath.Dir(path)
+	_, err := os.ReadDir(dir)
 	if err != nil {
-		if err := os.MkdirAll(path, 0777); err != nil {
-			fmt.Println(err.Error())
-			return false
-		}
-		return true
-	}
-	if !f.IsDir() {
-		fmt.Println("not dir")
 		return false
 	}
-
 	return true
 }

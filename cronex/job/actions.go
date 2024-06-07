@@ -6,19 +6,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Galdoba/devtools/cli/command"
+	"github.com/Galdoba/devtools/cronex/job/schedule"
 )
 
-func (job *Job) Save(path string) error {
-	job.saveTo = path
+func (job *Job) Save() error {
 	job.validate()
 	if !job.ready {
 		return fmt.Errorf(job.errMsg)
-	}
-	//check directory
-	if !pathIsValid(job.saveTo) {
-		return fmt.Errorf("save path is not valid: %v", job.saveTo)
 	}
 	if err := writeAsJson(job); err != nil {
 		return fmt.Errorf("write to file: %v", err.Error())
@@ -27,8 +24,7 @@ func (job *Job) Save(path string) error {
 }
 
 func (job *Job) Delete() error {
-	fmt.Printf("%v\n", job.saveTo+string(filepath.Separator)+job.ID+".json")
-	return os.Remove(job.saveTo + string(filepath.Separator) + job.ID + ".json")
+	return os.Remove(job.saveTo)
 }
 
 func Load(path string) (*Job, error) {
@@ -49,16 +45,29 @@ func Load(path string) (*Job, error) {
 	return j, nil
 }
 
-func (j *Job) Execute() (string, error) {
+type Logger interface {
+	Info()
+	Error()
+}
 
+func (j *Job) Execute() error {
+	if j.InProgress {
+		return nil
+	}
 	j.Atempts++
-	fmt.Println("run:", j.Handler, j.Args)
+	j.InProgress = true
 	cline := j.Handler + " " + strings.Join(j.Args, " ")
 	out, er, err := command.Execute(cline, command.Set(command.TERMINAL_ON), command.Set(command.BUFFER_ON))
 	//TODO: LOG EXECUTION
 	if err != nil {
-		return er, err
+		fmt.Println(out, er)
+		return err
 	}
+	j.InProgress = false
 	j.Done++
-	return out, nil
+	return nil
+}
+
+func (j *Job) TimeValid(t time.Time) bool {
+	return schedule.TimeValid(j.Schedule, t)
 }

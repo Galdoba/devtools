@@ -1,4 +1,5 @@
-MsgStore,string,Message Storage Directory,false,, , 
-Cycle,int,Restart Cycle,false,Restart loop for relay (seconds),default,3
-Log,string,Log Location,false,, , 
-encoding,yaml, , , , , 
+MsgStore,string,Message Storage Directory,false,
+Cycle,int,Restart Cycle,false,Restart loop for relay (seconds)
+Log,string,Log Location,false,whrere log file is kept
+LogLevel,int,Logger Level,false,write messages of this level and above
+encoding,yaml, , , 

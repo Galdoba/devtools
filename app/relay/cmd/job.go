@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/Galdoba/devtools/app/relay/config"
 	"github.com/Galdoba/devtools/cronex/job"
 	"github.com/urfave/cli/v2"
 )
@@ -18,21 +15,16 @@ func Newjob() *cli.Command {
 		UsageText: "Create new Job in storage directory which will track job fileles and execute them if time is valid",
 		//Description: fmt.Sprintf("build %v file from available model", configbuilder.SOURCE_FILE),
 		Action: func(c *cli.Context) error {
-			cfg, err := config.Load()
-			if err != nil {
-				return fmt.Errorf(err.Error())
-			}
 			handler := c.String("for")
 			jobArgs := c.Args().Slice()
-			jb := job.Create(handler, jobArgs...)
+			jb := job.Create(cfg.MessageStorageDirectory(), handler, jobArgs...)
 			jb.Repeatable = c.Bool("repeatable")
 			sched := c.String("schedule")
 			if sched == "" {
 				sched = "* * * * * *"
 			}
 			jb = jb.SetSchedule(sched)
-
-			return jb.Save(cfg.MessageStorageDirectory())
+			return jb.Save()
 		},
 		Flags: []cli.Flag{
 			&cli.StringFlag{

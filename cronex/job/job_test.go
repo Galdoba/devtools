@@ -18,7 +18,7 @@ func TestJob(t *testing.T) {
 	job.Schedule = schd
 	fmt.Println(job.Schedule.Allowance(schedule.DayOfMonth))
 
-	if err := job.Save(`C:\Users\Admin\go\src\github.com\Galdoba\devtools\cronex`); err != nil {
+	if err := job.Save(); err != nil {
 		t.Errorf("generation error: %v: %v", job.ID, err.Error())
 	}
 }
