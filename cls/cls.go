@@ -44,6 +44,7 @@ func New() *cls {
 }
 
 func writeMsg(logger *log.Logger, msg string) {
+	msg = strings.TrimSuffix(msg, "\n")
 	logger.Println(msg)
 }
 
