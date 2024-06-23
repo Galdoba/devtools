@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
@@ -28,11 +28,12 @@ const (
 
 type Task struct {
 	ID            uuid.UUID
+	ContainerID   string
 	Name          string
 	State         State
 	Image         string
-	Memory        int
-	Disk          int
+	Memory        int64
+	Disk          int64
 	ExposedPorts  nat.PortSet
 	PortBindings  map[string]string
 	RestartPolicy string
@@ -62,9 +63,29 @@ type Config struct {
 	RestartPolicy string
 }
 
+func NewConfig(t *Task) Config {
+	return Config{
+		Name:  t.Name,
+		Image: t.Image,
+		Env: []string{
+			"POSTGRES_USER=hive",
+			"POSTGRES_PASSWORD=secret",
+		},
+	}
+}
+
 type Docker struct {
 	Client *client.Client
 	Config Config
+}
+
+func NewDocker(config Config) Docker {
+	dc, _ := client.NewClientWithOpts(client.FromEnv)
+	d := Docker{
+		Client: dc,
+		Config: config,
+	}
+	return d
 }
 
 type DockerResult struct {
@@ -77,14 +98,14 @@ type DockerResult struct {
 func (d *Docker) Run() DockerResult {
 	ctx := context.Background()
 	reader, err := d.Client.ImagePull(
-		ctx, d.Config.Image, image.PullOptions{})
+		ctx, d.Config.Image, types.ImagePullOptions{})
 	if err != nil {
 		log.Printf("Error pulling image %s: %v\n", d.Config.Image, err)
 		return DockerResult{Error: err}
 	}
 	io.Copy(os.Stdout, reader)
 	rp := container.RestartPolicy{
-		Name: container.RestartPolicyMode(d.Config.RestartPolicy),
+		Name: d.Config.RestartPolicy,
 	}
 
 	r := container.Resources{
@@ -110,16 +131,17 @@ func (d *Docker) Run() DockerResult {
 		log.Printf("Error creating container using image %s: %v\n", d.Config.Image, err)
 		return DockerResult{Error: err}
 	}
-	err = d.Client.ContainerStart(ctx, resp.ID, container.StartOptions{})
+	err = d.Client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 	if err != nil {
 		log.Printf("Error starting container %s: %v\n", resp.ID, err)
 		return DockerResult{Error: err}
 	}
-	//d.Config.Runtime.ContainerID = resp.ID - WTF???
+
+	// d.Config.Runtime.ContainerID = resp.ID // - WTF???
 
 	out, err := d.Client.ContainerLogs(ctx,
 		resp.ID,
-		container.LogsOptions{
+		types.ContainerLogsOptions{
 			ShowStdout: true,
 			ShowStderr: true,
 		})
@@ -141,7 +163,7 @@ func (d *Docker) Stop(id string) DockerResult {
 		return DockerResult{Error: err}
 	}
 
-	err = d.Client.ContainerRemove(ctx, id, container.RemoveOptions{
+	err = d.Client.ContainerRemove(ctx, id, types.ContainerRemoveOptions{
 		RemoveVolumes: true,
 		RemoveLinks:   false,
 		Force:         false,
