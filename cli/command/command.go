@@ -21,6 +21,7 @@ const (
 )
 
 type terminalCommand struct {
+	cmd           exec.Cmd
 	programPath   string
 	args          []string
 	term          bool
@@ -64,6 +65,7 @@ func (tc *terminalCommand) Run() error {
 	var e bytes.Buffer
 	time.Sleep(time.Millisecond * 2)
 	cmd := exec.Command(tc.programPath, tc.args...)
+	tc.cmd = *cmd
 	//Control output for Console
 	if tc.term {
 		tc.writersOUT = append(tc.writersOUT, os.Stdout)
@@ -151,6 +153,11 @@ func (tc *terminalCommand) AddInstruction(ti commandInstruction) {
 	case CUSTOM_BUFFER:
 		tc.customBuffers[ti.arg] = &bytes.Buffer{}
 	}
+}
+
+func (tc *terminalCommand) Interrupt() error {
+	err := tc.cmd.Process.Signal(os.Interrupt)
+	return err
 }
 
 //StdOut - возвращает стандартный вывод
