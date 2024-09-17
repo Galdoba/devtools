@@ -1,7 +1,8 @@
 module github.com/Galdoba/devtools
 
-go 1.18
+go 1.21
 
+toolchain go1.21.6
 
 require (
 	github.com/charmbracelet/bubbletea v0.26.2
@@ -53,7 +54,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 )

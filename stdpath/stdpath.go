@@ -24,6 +24,30 @@ func homeDir() string {
 	return home + sep()
 }
 
+func LogDir() string {
+	return fmt.Sprintf("%v.log%v%v%v", homeDir(), sep(), app, sep())
+}
+
+func LogFile(keys ...string) string {
+	key := "default"
+	for _, k := range keys {
+		key = k
+	}
+	return fmt.Sprintf("%v%v.log", LogDir(), key)
+}
+
+func ConfigDir() string {
+	return fmt.Sprintf("%v.config%v%v%v", homeDir(), sep(), app, sep())
+}
+
+func ConfigFile(keys ...string) string {
+	key := "default"
+	for _, k := range keys {
+		key = k
+	}
+	return fmt.Sprintf("%v%v.config", ConfigDir(), key)
+}
+
 func ProgramDir(layers ...string) string {
 	suffix := ""
 	for _, layer := range layers {
