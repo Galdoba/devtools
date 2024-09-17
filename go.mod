@@ -1,8 +1,7 @@
 module github.com/Galdoba/devtools
 
-go 1.21
+go 1.18
 
-toolchain go1.21.6
 
 require (
 	github.com/charmbracelet/bubbletea v0.26.2
