@@ -25,7 +25,7 @@ func homeDir() string {
 }
 
 func LogDir() string {
-	return fmt.Sprintf("%v.log%v%v%v", homeDir(), sep(), app, sep())
+	return fmt.Sprintf("%v.log%vgaldoba%v%v%v", homeDir(), sep(), sep(), app, sep())
 }
 
 func LogFile(keys ...string) string {
@@ -37,7 +37,7 @@ func LogFile(keys ...string) string {
 }
 
 func ConfigDir() string {
-	return fmt.Sprintf("%v.config%v%v%v", homeDir(), sep(), app, sep())
+	return fmt.Sprintf("%v.config%vgaldoba%v%v%v", homeDir(), sep(), sep(), app, sep())
 }
 
 func ConfigFile(keys ...string) string {
