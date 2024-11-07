@@ -1,0 +1,29 @@
+package pathfinder
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+func homeDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic(err.Error())
+	}
+	return home + sep
+
+}
+
+var sep = string(filepath.Separator)
+
+func validDir(dir string) error {
+	fi, err := os.Stat(dir)
+	if err != nil {
+		return fmt.Errorf("failed to open directory: %v", err)
+	}
+	if !fi.IsDir() {
+		return fmt.Errorf("%v is not dir", dir)
+	}
+	return nil
+}
