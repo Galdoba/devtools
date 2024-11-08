@@ -4,23 +4,55 @@ import (
 	"fmt"
 )
 
+/*
+app := "my_app"
+pathfinder.NewPath(pathfinder.IsConfig(),pathfinder.WithProgram(app), pathfinder.WithFileName(app+".config"),)
+
+*/
+
 func NewPath(opts ...StdPathOption) (string, error) {
 	path := ""
 	settings := stdPathOpt{}
+	settings.root = homeDir()
 	for _, modify := range opts {
 		modify(&settings)
 	}
-
 	if settings.isConfig && settings.isLog {
 		return "", fmt.Errorf("both config and log options sellected")
 	}
+	path = settings.root
+	switch {
+	case settings.isConfig:
+		path += ".config" + sep
+	case settings.isLog:
+		path += ".log" + sep
+	default:
+		path += "Programs" + sep
+	}
+	path += "galdoba" + sep
+	if settings.system != "" {
+		path += settings.system + sep
+	}
+	if settings.program != "" {
+		path += settings.program + sep
+	}
+	for _, layer := range settings.layers {
+		path += layer + sep
+	}
+	if settings.fileName != "" {
+		path += settings.fileName
+	}
+	if err := pathValidation(path); err != nil {
+		return "", err
+	}
+
 	return path, nil
 }
 
 type StdPathOption func(*stdPathOpt)
 
 type stdPathOpt struct {
-	home             string
+	root             string
 	system           string
 	program          string
 	fileName         string
@@ -31,9 +63,9 @@ type stdPathOpt struct {
 	ensureExistiance bool
 }
 
-func WithHome(home string) StdPathOption {
+func WithRoot(root string) StdPathOption {
 	return func(spo *stdPathOpt) {
-		spo.home = home
+		spo.root = root
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func homeDir() string {
@@ -24,6 +25,34 @@ func validDir(dir string) error {
 	}
 	if !fi.IsDir() {
 		return fmt.Errorf("%v is not dir", dir)
+	}
+	return nil
+}
+
+func pathValidation(path string) error {
+	semicolonCount := 0
+	for _, glyph := range strings.Split(path, "") {
+		switch glyph {
+		case `<`, `>`, `"`, `|`, `?`, `*`, "\t", "\n", "\r":
+			return fmt.Errorf("path contains forbidden character: %v", glyph)
+		case ":":
+			semicolonCount++
+			if semicolonCount != 1 {
+				return fmt.Errorf("path contains forbidden character: %v", glyph)
+			}
+			disk := false
+			lowPath := strings.ToLower(path)
+			for _, l := range strings.Split("abdcefghijklmnopqrstuvwxyz", "") {
+				if strings.HasPrefix(lowPath, l+":") {
+					disk = true
+					break
+				}
+			}
+			if !disk {
+				return fmt.Errorf("path contains forbidden character: %v", glyph)
+			}
+		default:
+		}
 	}
 	return nil
 }
