@@ -3,7 +3,7 @@ package pathfinder
 import "testing"
 
 func TestNewPath(t *testing.T) {
-	app := "directory-tracker-service"
+
 	type args struct {
 		opts []StdPathOption
 	}
@@ -15,8 +15,14 @@ func TestNewPath(t *testing.T) {
 	}{
 		{
 			name:    "test 1",
-			args:    args{[]StdPathOption{WithProgram(app), WithSystem("edts"), WithFileName("dir01.list")}},
-			want:    "",
+			args:    args{[]StdPathOption{IsConfig(), WithProgram("aue"), WithFileName("test.config")}},
+			want:    `C:\Users\pemaltynov\.config\galdoba\aue\test.config`,
+			wantErr: false,
+		}, // TODO: Add test cases.
+		{
+			name:    "test 2",
+			args:    args{[]StdPathOption{IsConfig(), WithProgram("aue"), WithFileName("test_bad.config"), EnsureExistiance()}},
+			want:    `C:\Users\pemaltynov\.config\galdoba\aue\test_bad.config`,
 			wantErr: false,
 		}, // TODO: Add test cases.
 	}
