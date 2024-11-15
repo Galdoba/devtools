@@ -2,6 +2,7 @@ package pathfinder
 
 import (
 	"fmt"
+	"os"
 )
 
 /*
@@ -44,6 +45,11 @@ func NewPath(opts ...StdPathOption) (string, error) {
 	}
 	if err := pathValidation(path); err != nil {
 		return "", err
+	}
+
+	_, err := os.Stat(path)
+	if settings.ensureExistiance && err != nil {
+		return path, fmt.Errorf("failed to ensure existiance: %v", err)
 	}
 
 	return path, nil
