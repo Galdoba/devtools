@@ -5,13 +5,8 @@ import (
 	"os"
 )
 
-/*
-app := "my_app"
-pathfinder.NewPath(pathfinder.IsConfig(),pathfinder.WithProgram(app), pathfinder.WithFileName(app+".config"),)
-
-*/
-
 func NewPath(opts ...StdPathOption) (string, error) {
+
 	path := ""
 	settings := stdPathOpt{}
 	settings.root = homeDir()
