@@ -3,23 +3,28 @@ package main
 import (
 	"os"
 
-	"github.com/Galdoba/devtools/app/gvc/check"
+	"github.com/Galdoba/devtools/app/gvc/commands"
+	"github.com/Galdoba/devtools/text"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
 	app := cli.NewApp()
-	app.Version = "v 0.1.0" //#gvc: version control token
+	app.Version = "0.2.0 [build 11]" //#gvc: version control token
 	app.Name = "gvc"
 	app.Usage = "wrapper for 'go install' and 'go build' commands"
-	app.Description = "gvc is a version control tool for small apps, filling change_log and saving copy of the file for every major and minor upgrade. In order to use all features gvc should me started in a directory with main.go file."
+	app.Description = text.Wrap("gvc is a version control tool for small apps, filling change_log and saving copy of the file for every major and minor upgrade.\nIn order to use all features gvc should me started in a directory with main.go file.",
+		text.MaxWidth(77), text.LeftOffset(0), text.WrapLimit(10),
+	)
 	app.Flags = []cli.Flag{}
 
-	app.Before = func(c *cli.Context) error {
-		//check working directory
-		return check.WorkingDirectoryValid()
-	}
 	app.Commands = []*cli.Command{
+		commands.Init(),
+		commands.Stat(),
+		commands.Update(),
+
+		//gvc init
+		//gvc health
 		//gvc update
 		//gvc upgradeMinor
 		//gvc upgradeMajor

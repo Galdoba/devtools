@@ -8,7 +8,7 @@ type wrapper struct {
 	maxWidth    int
 	leftOffset  int
 	rightOffset int
-	wrapTrigger int
+	wrapLimit   int
 	wrapBefore  []string
 	wrapAfter   []string
 }
@@ -45,6 +45,12 @@ func LeftOffset(lo int) WrappingOption {
 	}
 }
 
+func WrapLimit(wl int) WrappingOption {
+	return func(w *wrapper) {
+		w.wrapLimit = wl
+	}
+}
+
 type wrappingSchema map[int]litera
 
 type litera struct {
@@ -58,6 +64,13 @@ var lit_Space = litera{
 	text:       " ",
 	rn:         32,
 	maybeStart: true,
+	maybeEnd:   true,
+}
+
+var lit_NewLine = litera{
+	text:       "\n",
+	rn:         10,
+	maybeStart: false,
 	maybeEnd:   true,
 }
 
@@ -93,10 +106,17 @@ func composeLines(wr wrapper, sc wrappingSchema) []string {
 	trimmed := -1
 	lenText := len(sc)
 	for i := 0; i < lenText; i++ {
+
 		lit := sc[i]
+		if lit.text == "\n" {
+			lines = append(lines, toLine(candidate))
+			candidate = newCandidate(wr.leftOffset)
+			continue
+		}
 		candidate = append(candidate, lit)
+
 		if len(candidate) == maxWidth {
-			candidate, trimmed = candidate.trimSuffix(3)
+			candidate, trimmed = candidate.trimSuffix(wr.wrapLimit)
 			switch trimmed {
 			case 0:
 				lines = append(lines, toLine(candidate))
