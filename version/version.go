@@ -10,43 +10,63 @@ import (
 
 type Version struct {
 	path         string
+	ProjectName  string   `json:"name"`
+	Description  string   `json:"description"`
 	MajorVersion int      `json:"major"`
 	MinorVersion int      `json:"minor"`
 	PatchVersion int      `json:"patch"`
 	Qualifiers   []string `json:"qualifiers,omitempty"`
 	Build        int      `json:"build"`
-	BuildDate    string   `json:"latest build date,omitempty"`
+	ReleaseDate  string   `json:"latest release date,omitempty"` //release = patch/minor/major
 }
 
-func New(path string) *Version {
+func New(path string, options ...VersionOption) *Version {
 	v := Version{}
 	v.path = path
-	v.Build = 1
+	v.Build = 0
+	for _, modifyWithOption := range options {
+		modifyWithOption(&v)
+	}
+
 	return &v
 }
 
+type VersionOption func(*Version)
+
+func WithName(name string) VersionOption {
+	return func(v *Version) {
+		v.ProjectName = name
+	}
+}
+
+func WithDescription(desc string) VersionOption {
+	return func(v *Version) {
+		v.Description = desc
+	}
+}
+
 func (v *Version) Update(qual ...string) {
-	v.BuildDate = ""
+	v.ReleaseDate = ""
 	v.Qualifiers = qual
 	v.Build++
 }
 
 func (v *Version) Patch(qual ...string) {
-	v.BuildDate = formatBuildTime()
+	v.ReleaseDate = formatBuildTime()
 	v.Qualifiers = qual
 	v.PatchVersion++
 	v.Build++
 }
 
 func (v *Version) UpgradeMinor(qual ...string) {
-	v.BuildDate = formatBuildTime()
+	v.ReleaseDate = formatBuildTime()
 	v.Qualifiers = qual
 	v.MinorVersion++
 	v.PatchVersion = 0
 	v.Build++
 }
 func (v *Version) UpgradeMajor(qual ...string) {
-	v.BuildDate = formatBuildTime()
+	v.ReleaseDate = formatBuildTime()
 	v.Qualifiers = qual
 	v.MajorVersion++
 	v.MinorVersion = 0
@@ -69,8 +89,8 @@ func (v *Version) String() string {
 	}
 	q = strings.TrimSuffix(q, "-")
 	s += q
-	if v.BuildDate != "" {
-		s += ":" + v.BuildDate
+	if v.ReleaseDate != "" {
+		s += ":" + v.ReleaseDate
 	}
 	s += fmt.Sprintf(" [build %v]", v.Build)
 	return s
@@ -125,4 +145,8 @@ func (v *Version) Save() error {
 		return err
 	}
 	return f.Close()
+}
+
+func (v *Version) Path() string {
+	return v.path
 }

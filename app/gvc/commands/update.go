@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"github.com/Galdoba/devtools/app/gvc/commands/autodoc"
 	"github.com/Galdoba/devtools/app/gvc/commands/check"
 	"github.com/Galdoba/devtools/app/gvc/commands/inject"
 	"github.com/Galdoba/devtools/version"
@@ -25,11 +26,12 @@ func Update() *cli.Command {
 			return CheckWorkingDirectory()
 		},
 
-		Action: func(*cli.Context) error {
+		Action: func(c *cli.Context) error {
 			found, err := check.GVCfile()
 			if err != nil {
 				return err
 			}
+			notes := c.StringSlice("notes")
 			switch found {
 			case false:
 				fmt.Println("No version control file for this project.\nRun 'gvc init' to create one.")
@@ -40,20 +42,34 @@ func Update() *cli.Command {
 				}
 				v.Update()
 				if err := inject.Inject(v, WorkingDir+main_go_file); err != nil {
-					return fmt.Errorf("source injection failed: %v")
+					return fmt.Errorf("source injection failed: %v", err)
 				}
 				if err := v.Save(); err != nil {
-					return fmt.Errorf("update failed: %v")
+					return fmt.Errorf("update failed: %v", err)
 				}
 				fmt.Printf("update successful\n")
 				fmt.Printf("current version: %v\n", v.String())
+				amd, err := autodoc.Load(v)
+				if err != nil {
+					return fmt.Errorf("failed to update docs: %v", err)
+				}
+				amd.Update(notes...)
+				if err = amd.Save(); err != nil {
+					return err
+				}
 
 			}
 			return nil
 		},
 
-		Subcommands:            []*cli.Command{},
-		Flags:                  []cli.Flag{},
+		Subcommands: []*cli.Command{},
+		Flags: []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:    "notes",
+				Usage:   "",
+				Aliases: []string{"n"},
+			},
+		},
 		SkipFlagParsing:        false,
 		HideHelp:               false,
 		HideHelpCommand:        false,

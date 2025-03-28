@@ -1,6 +1,8 @@
 {
+  "name": "gvc",
+  "description": "version control tool for golang projects",
   "major": 0,
-  "minor": 3,
+  "minor": 0,
   "patch": 0,
-  "build": 11
+  "build": 20
 }
