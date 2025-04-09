@@ -24,17 +24,18 @@ func Init() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
-			_, err := version.Load(WorkingDir + gvc_file)
+			_, err := version.Load(app_name)
 			if err == nil {
 				return fmt.Errorf("gvc file already exists")
 			}
-			if err := version.New(WorkingDir+gvc_file,
+			v := version.New(
 				version.WithName(c.String("project")),
 				version.WithDescription(c.String("description")),
-			).Save(); err != nil {
+			)
+			if err := v.Save(); err != nil {
 				return fmt.Errorf("failed to initiate gvc file: %v", err)
 			}
-			fmt.Println("gvc file created:", WorkingDir+gvc_file)
+			fmt.Println("gvc file created:", v.Path())
 			//go to project root root
 			//create ./docs
 			//create ./docs/gvc_name.md

@@ -3,14 +3,13 @@ package commands
 import (
 	"fmt"
 
-	"github.com/Galdoba/devtools/app/gvc/commands/check"
 	"github.com/Galdoba/devtools/version"
 	"github.com/urfave/cli/v2"
 )
 
-func Stat() *cli.Command {
+func Status() *cli.Command {
 	return &cli.Command{
-		Name:        "stat",
+		Name:        "status",
 		Aliases:     []string{},
 		Usage:       "Print current project's gvc file",
 		UsageText:   "",
@@ -24,22 +23,13 @@ func Stat() *cli.Command {
 			return CheckWorkingDirectory()
 		},
 
-		Action: func(*cli.Context) error {
-			found, err := check.GVCfile()
+		Action: func(c *cli.Context) error {
+			v, err := version.Load(app_name)
 			if err != nil {
-				return err
+				return fmt.Errorf("gvc not exists")
 			}
-			switch found {
-			case false:
-				fmt.Println("No version control file for this project.\nRun 'gvc init' to create one.")
-			case true:
-				v, err := version.Load(WorkingDir + gvc_file)
-				if err != nil {
-					return fmt.Errorf("load version failed: %v", err)
-				}
-				fmt.Printf("current version: %v\n", v.String())
+			fmt.Printf("%v source code has version %v", app_name, v.String())
 
-			}
 			return nil
 		},
 

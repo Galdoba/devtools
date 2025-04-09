@@ -8,12 +8,12 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func Update() *cli.Command {
+func Minor() *cli.Command {
 	return &cli.Command{
-		Name:        "update",
+		Name:        "minor",
 		Aliases:     []string{},
-		Usage:       "Create new technical build",
-		UsageText:   "gvc update",
+		Usage:       "Create new minor release",
+		UsageText:   "gvc minor -m [message]",
 		Description: "Build will be increased. Date will not be written. No copy will be stored or any other changes made.",
 		Args:        false,
 		ArgsUsage:   "",
@@ -29,31 +29,25 @@ func Update() *cli.Command {
 			if err != nil {
 				return fmt.Errorf("load version failed: %v", err)
 			}
-			switch c.String("m") {
-			case "":
-				v.Update()
-			default:
-				v.Update(c.String("m"))
-			}
-
+			v.UpgradeMinor(c.String("m"))
 			if err := inject.Inject(v, WorkingDir+main_go_file); err != nil {
 				return fmt.Errorf("source injection failed: %v", err)
 			}
 			if err := v.Save(); err != nil {
 				return fmt.Errorf("update failed: %v", err)
 			}
-			fmt.Printf("update successful\n")
+			fmt.Printf("minor release successful\n")
 			fmt.Printf("current version: %v\n", v.String())
-
 			return nil
 		},
 
 		Subcommands: []*cli.Command{},
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{
-				Name:    "message",
-				Usage:   "",
-				Aliases: []string{"m"},
+				Name:     "message",
+				Usage:    "",
+				Required: true,
+				Aliases:  []string{"m"},
 			},
 		},
 		SkipFlagParsing:        false,

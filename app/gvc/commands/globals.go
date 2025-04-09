@@ -1,10 +1,15 @@
 package commands
 
-import "github.com/Galdoba/devtools/app/gvc/commands/check"
+import (
+	"path/filepath"
+
+	"github.com/Galdoba/devtools/app/gvc/commands/check"
+)
 
 var WorkingDir string
 var gvc_file = "version.gvc"
 var main_go_file = "main.go"
+var app_name = ""
 
 func CheckWorkingDirectory() error {
 	wd, err := check.WorkingDirectory()
@@ -12,5 +17,6 @@ func CheckWorkingDirectory() error {
 		return err
 	}
 	WorkingDir = wd
+	app_name = filepath.Base(filepath.Dir(wd))
 	return nil
 }

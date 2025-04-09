@@ -4,29 +4,32 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"time"
+
+	"github.com/Galdoba/devtools/pathfinder"
 )
 
 type Version struct {
-	path         string
-	ProjectName  string   `json:"name"`
-	Description  string   `json:"description"`
-	MajorVersion int      `json:"major"`
-	MinorVersion int      `json:"minor"`
-	PatchVersion int      `json:"patch"`
-	Qualifiers   []string `json:"qualifiers,omitempty"`
-	Build        int      `json:"build"`
-	ReleaseDate  string   `json:"latest release date,omitempty"` //release = patch/minor/major
+	ProjectName  string `json:"name"`
+	Description  string `json:"description"`
+	MajorVersion int    `json:"major"`
+	MinorVersion int    `json:"minor"`
+	PatchVersion int    `json:"patch"`
+	Build        int    `json:"build"`
+	ReleaseDate  string `json:"latest release date,omitempty"` //release = patch/minor/major
+	Notes        [][]string
 }
 
-func New(path string, options ...VersionOption) *Version {
+func New(options ...VersionOption) *Version {
 	v := Version{}
-	v.path = path
 	v.Build = 0
 	for _, modifyWithOption := range options {
 		modifyWithOption(&v)
 	}
+	v.Notes = append(v.Notes, []string{})
 
 	return &v
 }
@@ -45,33 +48,45 @@ func WithDescription(desc string) VersionOption {
 	}
 }
 
-func (v *Version) Update(qual ...string) {
+func (v *Version) Update(notes ...string) {
 	v.ReleaseDate = ""
-	v.Qualifiers = qual
 	v.Build++
+	v.addNotes(notes...)
 }
 
-func (v *Version) Patch(qual ...string) {
+func (v *Version) Patch(notes ...string) {
 	v.ReleaseDate = formatBuildTime()
-	v.Qualifiers = qual
 	v.PatchVersion++
 	v.Build++
+	v.Notes = append(v.Notes, []string{})
+	v.Notes[len(v.Notes)-1] = append(v.Notes[len(v.Notes)-1], fmt.Sprintf("version %v", v.String()))
+	v.addNotes(notes...)
 }
 
-func (v *Version) UpgradeMinor(qual ...string) {
+func (v *Version) UpgradeMinor(notes ...string) {
 	v.ReleaseDate = formatBuildTime()
-	v.Qualifiers = qual
 	v.MinorVersion++
 	v.PatchVersion = 0
 	v.Build++
+	v.Notes = append(v.Notes, []string{})
+	v.Notes[len(v.Notes)-1] = append(v.Notes[len(v.Notes)-1], fmt.Sprintf("version %v", v.String()))
+	v.addNotes(notes...)
 }
-func (v *Version) UpgradeMajor(qual ...string) {
+func (v *Version) UpgradeMajor(notes ...string) {
 	v.ReleaseDate = formatBuildTime()
-	v.Qualifiers = qual
 	v.MajorVersion++
 	v.MinorVersion = 0
 	v.PatchVersion = 0
 	v.Build++
+	v.Notes = append(v.Notes, []string{})
+	v.Notes[len(v.Notes)-1] = append(v.Notes[len(v.Notes)-1], fmt.Sprintf("version %v", v.String()))
+	v.addNotes(notes...)
+}
+
+func (v *Version) addNotes(notes ...string) {
+	for _, note := range notes {
+		v.Notes[len(v.Notes)-1] = append(v.Notes[len(v.Notes)-1], note)
+	}
 }
 
 func (v *Version) String() string {
@@ -80,13 +95,7 @@ func (v *Version) String() string {
 	s += fmt.Sprintf(".%v", v.MinorVersion)
 	s += fmt.Sprintf(".%v", v.PatchVersion)
 	q := ""
-	if len(v.Qualifiers) > 0 {
 
-		for _, qual := range v.Qualifiers {
-			q += "-" + qual
-		}
-
-	}
 	q = strings.TrimSuffix(q, "-")
 	s += q
 	if v.ReleaseDate != "" {
@@ -115,8 +124,8 @@ func stringed(i int) string {
 	return s
 }
 
-func Load(path string) (*Version, error) {
-	bt, err := os.ReadFile(path)
+func Load(name string) (*Version, error) {
+	bt, err := os.ReadFile(getpath(name))
 	if err != nil {
 		return nil, err
 	}
@@ -124,12 +133,20 @@ func Load(path string) (*Version, error) {
 	if err := json.Unmarshal(bt, &v); err != nil {
 		return nil, err
 	}
-	v.path = path
 	return &v, nil
 }
 
+func getpath(name string) string {
+	dir, _ := pathfinder.NewPath(pathfinder.WithProgram("gvc"))
+	path := dir + name + ".json"
+	return path
+}
+
 func (v *Version) Save() error {
-	f, err := os.OpenFile(v.path, os.O_CREATE|os.O_WRONLY, 0666)
+	path := getpath(v.ProjectName)
+	dir := filepath.Dir(path)
+	os.MkdirAll(dir, 0666)
+	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
@@ -148,5 +165,20 @@ func (v *Version) Save() error {
 }
 
 func (v *Version) Path() string {
-	return v.path
+	return getpath(v.ProjectName)
+}
+
+func (v *Version) Text() string {
+	s := ""
+	s += fmt.Sprintf("%v\n", v.ProjectName)
+	s += fmt.Sprintf("%v\n", v.Description)
+	s += fmt.Sprintf(" \n")
+	slices.Reverse(v.Notes)
+	for _, notes := range v.Notes {
+		for _, note := range notes {
+			s += fmt.Sprintf("%v\n", note)
+		}
+		s += fmt.Sprintf(" \n")
+	}
+	return s
 }

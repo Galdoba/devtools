@@ -33,13 +33,13 @@ func findVersionControlToken(lines []string) (int, error) {
 	candidates := []int{}
 	for i, line := range lines {
 		lowLine := strings.ToLower(line)
-		if strings.Contains(lowLine, "version = ") && strings.Contains(lowLine, "//#gvc: version control token") {
+		if strings.Contains(lowLine, " = ") && strings.Contains(lowLine, "//#gvc") {
 			candidates = append(candidates, i)
 		}
 	}
 	switch len(candidates) {
 	case 0:
-		return -1, fmt.Errorf("'#gvc: version control token' was not found")
+		return -1, fmt.Errorf("'#gvc' was not found")
 	case 1:
 		return candidates[0], nil
 	default:
@@ -57,7 +57,7 @@ func fileToLines(path string) ([]string, error) {
 }
 
 func inject(v *version.Version, line string) (string, error) {
-	re := regexp.MustCompile(`.*ersion = (.*)//#gvc: version control token`)
+	re := regexp.MustCompile(`.* = (.*)//#gvc`)
 	found := re.FindStringSubmatch(line)
 	if len(found) != 2 {
 		return "", fmt.Errorf("version control token not found")

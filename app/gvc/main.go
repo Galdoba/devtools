@@ -10,7 +10,7 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.Version = "0.0.0 [build 20]" //#gvc: version control token
+	app.Version = "0.0.1:20250409 [build 6]" //#gvc: version control token
 	app.Name = "gvc"
 	app.Usage = "wrapper for 'go install' and 'go build' commands"
 	app.Description = text.Wrap("gvc is a version control tool for small apps, filling change_log and saving copy of the file for every major and minor upgrade.\nIn order to use all features gvc should me started in a directory with main.go file.",
@@ -20,7 +20,10 @@ func main() {
 
 	app.Commands = []*cli.Command{
 		commands.Init(),
-		commands.Stat(),
+		commands.Status(),
+		commands.Major(),
+		commands.Minor(),
+		commands.Patch(),
 		commands.Update(),
 
 		//gvc init
