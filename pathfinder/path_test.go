@@ -1,8 +1,10 @@
 package pathfinder
 
-import "testing"
+import (
+	"testing"
+)
 
-func TestNewPath(t *testing.T) {
+func TestNewPath0(t *testing.T) {
 
 	type args struct {
 		opts []StdPathOption
